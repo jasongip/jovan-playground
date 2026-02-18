@@ -26,7 +26,7 @@
             padding: 20px;
         }
 
-        /* App 掣基本樣式 - 泥土方塊風格 */
+        /* App 掣基本樣式 */
         .app-card {
             background: #8b5e3c;
             border: 6px solid #3d2b1f;
@@ -38,45 +38,60 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            position: relative;
+            position: relative; /* 攞嚟定位 NEW tag */
             transition: all 0.2s ease;
             box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
 
-        /* 效果 1：發光 (Glow) */
+        /* NEW 標籤樣式 */
+        .new-tag {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #ff0000;
+            color: #fff;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 3px solid #fff;
+            font-size: 1.2em;
+            transform: rotate(15deg);
+            box-shadow: 3px 3px 0 #000;
+            z-index: 100;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: rotate(15deg) scale(1); }
+            to { transform: rotate(15deg) scale(1.1); }
+        }
+
+        /* 互動效果 */
         .app-card:hover, .app-card:active {
             border-color: #55FF55;
             box-shadow: 0 0 20px #55FF55, 0 0 40px #00AA00;
             background: #a06e4a;
         }
 
-        /* 效果 2：震動 (Shake) 動畫 */
         @keyframes shake {
             0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
             20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
             40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
             60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(3px, 1px) rotate(-1deg); }
             80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(1px, 2px) rotate(0deg); }
             100% { transform: translate(1px, -2px) rotate(-1deg); }
         }
 
-        .app-card:hover {
-            animation: shake 0.5s infinite; /* 指住嗰陣一直震 */
-        }
+        .app-card:hover { animation: shake 0.5s infinite; }
 
         .app-card:active {
-            animation: none; /* 撳落去嗰陣停震並下沉 */
+            animation: none;
             transform: translateY(8px);
             border-bottom-width: 4px;
         }
 
         .app-icon { font-size: 4.5em; margin-bottom: 10px; filter: drop-shadow(3px 3px 0 #000); }
-        .app-title { font-size: 1.8em; text-shadow: 3px 3px #000; font-weight: bold; }
+        .app-title { font-size: 1.6em; text-shadow: 3px 3px #000; font-weight: bold; }
 
         .footer { 
             margin-top: 60px; 
@@ -96,7 +111,7 @@
     <div class="app-grid">
         <a href="phonics_lesson.html" class="app-card">
             <div class="app-icon">📖</div>
-            <div class="app-title">Phonics Lessons</div>
+            <div class="app-title">Phonics Lesson</div>
         </a>
 
         <a href="phonics_hero.html" class="app-card">
@@ -112,6 +127,12 @@
         <a href="chinese_quest.html" class="app-card">
             <div class="app-icon">✍️</div>
             <div class="app-title">Chinese Quest</div>
+        </a>
+
+        <a href="idiom_rescue.html" class="app-card">
+            <div class="new-tag">NEW!</div>
+            <div class="app-icon">🦊</div>
+            <div class="app-title">Idiom Rescue</div>
         </a>
     </div>
 
