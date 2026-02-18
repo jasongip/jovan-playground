@@ -12,54 +12,91 @@
             background-image: repeating-conic-gradient(#4aa02c 0% 25%, #449028 0% 50%);
             background-size: 60px 60px;
             color: #fff; text-align: center; margin: 0; padding: 20px;
+            overflow-x: hidden;
         }
-        h1 { font-size: 3em; text-shadow: 4px 4px #000; margin-bottom: 30px; }
         
-        /* App Grid 佈局 */
+        h1 { font-size: 3.5em; text-shadow: 5px 5px #000; margin-bottom: 20px; color: #55FF55; }
+
         .app-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 20px;
-            max-width: 800px;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 25px;
+            max-width: 900px;
             margin: auto;
             padding: 20px;
         }
 
-        /* App 按鈕樣式 */
+        /* App 掣基本樣式 - 泥土方塊風格 */
         .app-card {
             background: #8b5e3c;
-            border: 5px solid #3d2b1f;
-            border-bottom-width: 10px;
+            border: 6px solid #3d2b1f;
+            border-bottom-width: 12px;
             border-radius: 15px;
-            padding: 20px 10px;
+            padding: 25px 15px;
             text-decoration: none;
             color: #fff;
-            transition: 0.2s;
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 10px 0 rgba(0,0,0,0.3);
+            position: relative;
+            transition: all 0.2s ease;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
-        .app-card:active {
-            transform: translateY(5px);
-            border-bottom-width: 5px;
-            box-shadow: 0 5px 0 rgba(0,0,0,0.3);
-        }
-        .app-icon { font-size: 4em; margin-bottom: 10px; }
-        .app-title { font-size: 1.5em; text-shadow: 2px 2px #000; }
 
-        /* 底部提示 */
-        .footer { margin-top: 50px; font-size: 1.2em; opacity: 0.8; }
+        /* 效果 1：發光 (Glow) */
+        .app-card:hover, .app-card:active {
+            border-color: #55FF55;
+            box-shadow: 0 0 20px #55FF55, 0 0 40px #00AA00;
+            background: #a06e4a;
+        }
+
+        /* 效果 2：震動 (Shake) 動畫 */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .app-card:hover {
+            animation: shake 0.5s infinite; /* 指住嗰陣一直震 */
+        }
+
+        .app-card:active {
+            animation: none; /* 撳落去嗰陣停震並下沉 */
+            transform: translateY(8px);
+            border-bottom-width: 4px;
+        }
+
+        .app-icon { font-size: 4.5em; margin-bottom: 10px; filter: drop-shadow(3px 3px 0 #000); }
+        .app-title { font-size: 1.8em; text-shadow: 3px 3px #000; font-weight: bold; }
+
+        .footer { 
+            margin-top: 60px; 
+            font-size: 1.4em; 
+            background: rgba(0,0,0,0.6); 
+            display: inline-block; 
+            padding: 10px 30px; 
+            border-radius: 50px;
+            border: 2px solid #55FF55;
+        }
     </style>
 </head>
 <body>
 
-    <h1>🎮 JOVAN'S LEARNING HUB 🎮</h1>
+    <h1>🎮 JOVAN'S PLAYGROUND 🎮</h1>
 
     <div class="app-grid">
         <a href="phonics_lesson.html" class="app-card">
             <div class="app-icon">📖</div>
-            <div class="app-title">Phonics Lesson</div>
+            <div class="app-title">Phonics Lessons</div>
         </a>
 
         <a href="phonics_hero.html" class="app-card">
@@ -76,11 +113,11 @@
             <div class="app-icon">✍️</div>
             <div class="app-title">Chinese Quest</div>
         </a>
-        
-        </div>
+    </div>
 
     <div class="footer">
-        Made with ❤️ for Jovan. Just refresh for the latest updates!
+        Made with ❤️ for Jovan. <br>
+        Reload the page for new adventures!
     </div>
 
 </body>
