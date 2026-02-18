@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jovan's Custom Multiplier</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'VT323', monospace; 
+            background-color: #4aa02c; 
+            background-image: repeating-conic-gradient(#4aa02c 0% 25%, #449028 0% 50%);
+            background-size: 60px 60px;
+            color: #fff; padding: 10px; overflow-x: hidden; 
+        }
+        .container { max-width: 900px; margin: auto; text-align: center; position: relative; z-index: 20; }
+        
+        /* 設定掣及面板 [cite: 2026-02-16] */
+        #settings-btn {
+            position: fixed; top: 10px; left: 10px; 
+            background: #777; border: 3px solid #fff; padding: 5px 15px;
+            font-size: 1.5em; cursor: pointer; z-index: 1001; color: #fff;
+        }
+        #settings-panel {
+            display: none; position: fixed; top: 60px; left: 10px;
+            background: rgba(0,0,0,0.9); border: 4px solid #3d2b1f;
+            padding: 15px; width: 200px; text-align: left; z-index: 1001;
+            box-shadow: 5px 5px 0 #000;
+        }
+        .check-item { display: block; margin: 8px 0; font-size: 1.4em; color: #FFFF55; cursor: pointer; }
+        .check-item input { margin-right: 10px; transform: scale(1.5); }
+
+        #timer { 
+            position: fixed; top: 10px; right: 10px; 
+            background: rgba(0,0,0,0.8); padding: 10px 20px; 
+            border: 4px solid #fff; font-size: 2.2em; z-index: 1000;
+            color: #55FF55; min-width: 100px;
+        }
+        .time-over { color: #888 !important; border-color: #555 !important; }
+
+        h1 { color: #fff; text-shadow: 5px 5px #000; font-size: 2.5em; margin: 10px 0; }
+        .quiz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 10px; }
+        .q-block { background: #8b5e3c; border: 4px solid #3d2b1f; padding: 10px; display: flex; align-items: center; justify-content: space-around; box-shadow: 4px 4px 0 #22130c; }
+        .q-text { font-size: 2em; text-shadow: 2px 2px #000; }
+        input[type="number"] { width: 70px; padding: 5px; border: 3px solid #333; background: #ddd; text-align: center; font-size: 1.6em; font-family: 'VT323', monospace; outline: none; }
+        input.wrong { border-color: #ff0000; background: #ffcccc; box-shadow: 0 0 10px #ff0000; }
+        input.correct { border-color: #00ff00; background: #ccffcc; box-shadow: 0 0 10px #00ff00; }
+
+        /* Mobs 渲染修復 [cite: 2026-02-16] */
+        #mob-field { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 15; display: block; }
+        .mob { position: absolute; left: -150px; display: block !important; }
+        .steve { width: 50px; height: 80px; z-index: 101; }
+        .steve-head { width: 30px; height: 30px; background: #EBD2B2; margin: 0 auto; border: 2px solid #000; position: relative; }
+        .steve-hair { width: 100%; height: 8px; background: #3d2b1f; position: absolute; top: 0; }
+        .steve-eye { width: 4px; height: 4px; background: #fff; position: absolute; top: 15px; box-shadow: 15px 0 #fff, 2px 0 #4040FF, 17px 0 #4040FF; }
+        .steve-body { width: 40px; height: 40px; background: #00AFAF; margin: -2px auto; border: 2px solid #000; }
+        .steve-pants { width: 40px; height: 15px; background: #4040FF; margin: -2px auto; border: 2px solid #000; }
+        .diamond-sword { position: absolute; right: -25px; top: 20px; width: 10px; height: 40px; background: #70f3ff; border: 2px solid #3d2b1f; transform: rotate(45deg); animation: swing 0.3s infinite alternate; }
+        @keyframes swing { from { transform: rotate(20deg); } to { transform: rotate(70deg); } }
+        .creeper { width: 50px; height: 70px; background: #51a03e; border: 2px solid #000; z-index: 100; }
+        .creeper-face { width: 30px; height: 30px; margin: 10px auto; background: #000; clip-path: polygon(0% 20%, 20% 20%, 20% 0%, 80% 0%, 80% 20%, 100% 20%, 100% 60%, 80% 60%, 80% 40%, 60% 40%, 60% 80%, 80% 80%, 80% 100%, 20% 100%, 20% 80%, 40% 80%, 40% 40%, 20% 40%, 20% 60%, 0% 60%); }
+        .pig { width: 60px; height: 45px; background: #ff99aa; border: 2px solid #000; position: relative; z-index: 100; }
+        .pig-eye { position: absolute; width: 6px; height: 6px; background: #fff; top: 10px; box-shadow: 30px 0 #fff, 2px 0 #000, 32px 0 #000; }
+        .pig-nose { position: absolute; width: 20px; height: 12px; background: #ff5577; bottom: 8px; left: 20px; border: 1px solid #000; }
+
+        .btn-check { background: #4aa02c; color: #fff; border: 5px solid #2d601a; border-bottom-width: 10px; padding: 15px 40px; font-size: 2em; font-family: 'VT323', monospace; cursor: pointer; margin-top: 25px; text-shadow: 2px 2px #000; width: 100%; }
+        .btn-check:active { border-bottom-width: 4px; transform: translateY(6px); }
+        #score-box { font-size: 2.5em; color: #FFFF55; text-shadow: 3px 3px #000; margin: 15px 0; }
+        .chicken { position: fixed; top: -50px; font-size: 40px; z-index: 500; pointer-events: none; animation: fall linear forwards; }
+        @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+        .destroyed { animation: explode 0.5s forwards; pointer-events: none; }
+        @keyframes explode { 0% { transform: scale(1); } 50% { transform: scale(1.1); filter: brightness(1.5); } 100% { transform: scale(0) rotate(15deg); opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div id="settings-btn" onclick="toggleSettings()">⚙️ SETTINGS</div>
+<div id="settings-panel">
+    <div style="font-size: 1.2em; border-bottom: 2px solid #fff; margin-bottom: 10px;">Pick Tables:</div>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="1" checked> Table 1</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="2" checked> Table 2</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="3" checked> Table 3</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="4" checked> Table 4</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="5" checked> Table 5</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="6" checked> Table 6</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="7" checked> Table 7</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="8"> Table 8</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="9"> Table 9</label>
+    <button onclick="toggleSettings(); resetGame();" style="width:100%; margin-top:10px; font-family:'VT323'; background:#55FF55;">UPDATE & RESTART</button>
+</div>
+
+<div id="timer">120s</div>
+
+<div class="container">
+    <h1>⚔️ JOVAN'S MULTIPLIER ⚔️</h1>
+    <p>20 Questions | Max $x10$</p>
+    <div class="quiz-grid" id="quizGrid"></div>
+    <button class="btn-check" onclick="checkAll()">CHECK ANSWERS!</button>
+    <div id="score-box"></div>
+</div>
+
+<div id="mob-field"></div>
+
+<script>
+    let questions = [];
+    let timeLeft = 120;
+    let timerInterval = null;
+
+    function toggleSettings() {
+        const panel = document.getElementById('settings-panel');
+        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function resetGame() {
+        timeLeft = 120;
+        document.getElementById('timer').classList.remove('time-over');
+        document.getElementById('score-box').innerHTML = "";
+        init();
+    }
+
+    function init() {
+        const grid = document.getElementById('quizGrid');
+        questions = [];
+        
+        // 取得選取的乘數表 [cite: 2026-02-16]
+        const opts = document.querySelectorAll('.table-opt:checked');
+        const allowedTables = Array.from(opts).map(cb => parseInt(cb.value));
+        
+        // 如果無揀，預設出 Table 1-7
+        const finalTables = allowedTables.length > 0 ? allowedTables : [1,2,3,4,5,6,7];
+
+        // 生成 20 題 [cite: 2026-02-16]
+        for (let i = 0; i < 20; i++) {
+            const a = finalTables[Math.floor(Math.random() * finalTables.length)];
+            const b = Math.floor(Math.random() * 10) + 1;
+            questions.push({ q: a + " x " + b, ans: a * b });
+        }
+        
+        grid.innerHTML = questions.map((d, i) => `
+            <div class="q-block" id="block-${i}">
+                <span class="q-text">${d.q} =</span>
+                <input type="number" id="ans-${i}" pattern="[0-9]*">
+            </div>
+        `).join('');
+        
+        startTimer();
+    }
+
+    function startTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (timeLeft > 0) {
+                timeLeft--;
+                document.getElementById('timer').innerHTML = timeLeft + "s";
+                if (timeLeft === 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('timer').classList.add('time-over');
+                    document.getElementById('timer').innerHTML = "TIME UP!";
+                }
+            }
+        }, 1000);
+    }
+
+    function checkAll() {
+        let score = 0;
+        questions.forEach((d, i) => {
+            const inputEl = document.getElementById(`ans-${i}`);
+            const val = parseInt(inputEl.value);
+            inputEl.classList.remove('correct', 'wrong');
+            if (val === d.ans) { score++; inputEl.classList.add('correct'); }
+            else { inputEl.classList.add('wrong'); }
+        });
+        document.getElementById('score-box').innerHTML = "SCORE: " + score + " / 20";
+        if (score === 20) {
+            clearInterval(timerInterval);
+            startHeroStampede();
+            if (timeLeft > 0) spawnFriedChicken();
+        } else {
+            const fw = document.querySelector('.wrong');
+            if (fw) fw.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    function startHeroStampede() {
+        const field = document.getElementById('mob-field');
+        field.innerHTML = '';
+        spawnMob('steve', '<div class="steve-head"><div class="steve-hair"></div><div class="steve-eye"></div></div><div class="steve-body"></div><div class="steve-pants"></div><div class="diamond-sword"></div>', 0, 18);
+        const types = [{ class: 'creeper', h: '<div class="creeper-face"></div>' }, { class: 'pig', h: '<div class="pig-eye"></div><div class="pig-nose"></div>' }];
+        for (let i = 0; i < 20; i++) {
+            const t = types[Math.floor(Math.random() * types.length)];
+            spawnMob(t.class, t.h, (i + 1) * 100, Math.random() * 8 + 10);
+        }
+    }
+
+    function spawnMob(cl, h, delay, spd) {
+        const f = document.getElementById('mob-field');
+        setTimeout(() => {
+            const m = document.createElement('div');
+            m.className = 'mob ' + cl; m.innerHTML = h;
+            m.style.top = Math.random() * 80 + 5 + 'vh';
+            f.appendChild(m);
+            let p = -150;
+            const mv = setInterval(() => {
+                p += spd; m.style.left = p + 'px';
+                document.querySelectorAll('.q-block').forEach(b => {
+                    const r = b.getBoundingClientRect(); const mr = m.getBoundingClientRect();
+                    if (mr.right > r.left && mr.left < r.right && mr.bottom > r.top && mr.top < r.bottom) b.classList.add('destroyed');
+                });
+                if (p > window.innerWidth + 250) { clearInterval(mv); m.remove(); }
+            }, 30);
+        }, delay);
+    }
+
+    function spawnFriedChicken() {
+        for (let i = 0; i < 40; i++) {
+            setTimeout(() => {
+                const c = document.createElement('div');
+                c.className = 'chicken'; c.innerHTML = '🍗'; 
+                c.style.left = Math.random() * 100 + 'vw';
+                c.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+                document.body.appendChild(c);
+                setTimeout(() => c.remove(), 3500);
+            }, i * 100);
+        }
+    }
+    window.onload = init;
+</script>
+</body>
+</html>
