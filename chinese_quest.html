@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jovan's Chinese Challenge Pro v4</title>
+    <title>Jovan's Chinese Challenge Combat Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -13,36 +13,37 @@
             background-size: 40px 40px; color: #fff; padding: 10px; text-align: center; overflow: hidden;
         }
 
-        /* 左上角 Tooltip */
-        #help-btn {
-            position: fixed; top: 10px; left: 10px; 
-            background: #f1c40f; border: 3px solid #fff; border-radius: 50%;
-            width: 40px; height: 40px; line-height: 40px; font-size: 1.5em;
-            cursor: pointer; z-index: 2000; box-shadow: 3px 3px 0 #000;
-        }
-        #tooltip-content {
-            display: none; position: fixed; top: 60px; left: 10px;
-            background: rgba(0,0,0,0.9); border: 2px solid #55FF55;
-            padding: 15px; width: 280px; text-align: left; font-size: 1.1em;
-            z-index: 2000; box-shadow: 5px 5px 0 #000; line-height: 1.4;
-        }
+        /* XP Bar 樣式 */
+        #xp-container { position: fixed; bottom: 0; left: 0; width: 100%; height: 25px; background: #222; border-top: 4px solid #000; z-index: 2000; }
+        #xp-bar { height: 100%; width: 0%; background: #55FF55; transition: width 0.5s ease; box-shadow: inset 0 5px 10px rgba(255,255,255,0.3); }
+        #xp-text { position: absolute; top: -28px; left: 50%; transform: translateX(-50%); color: #55FF55; font-size: 1.6em; text-shadow: 2px 2px #000; font-weight: bold; }
 
-        #counter-group {
-            position: fixed; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 1000;
+        /* TNT Combo 樣式 */
+        #tnt-box { position: fixed; bottom: 45px; right: 20px; width: 80px; height: 80px; z-index: 1500; display: none; }
+        .tnt-sprite { 
+            width: 100%; height: 100%; background: #d32f2f; border: 4px solid #000; 
+            display: flex; align-items: center; justify-content: center; font-size: 1.5em; font-weight: bold; color: #fff;
+            box-shadow: 4px 4px 0 #000;
         }
-        .counter-tag {
-            background: rgba(0,0,0,0.8); border: 2px solid #55FF55;
-            padding: 5px 12px; font-size: 1.4em; color: #FFFF55; text-align: right;
+        .combo-count { position: absolute; top: -25px; left: 0; width: 100%; color: #ffff55; font-size: 1.8em; text-shadow: 2px 2px #000; }
+
+        /* 爆炸動畫 */
+        @keyframes explode {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.4); filter: brightness(3); }
+            100% { transform: scale(0); opacity: 0; }
         }
+        .exploding { animation: explode 0.5s forwards; }
+
+        /* 原有樣式 */
+        #help-btn { position: fixed; top: 10px; left: 10px; background: #f1c40f; border: 3px solid #fff; border-radius: 50%; width: 40px; height: 40px; line-height: 40px; font-size: 1.5em; cursor: pointer; z-index: 2000; box-shadow: 3px 3px 0 #000; }
+        #tooltip-content { display: none; position: fixed; top: 60px; left: 10px; background: rgba(0,0,0,0.9); border: 2px solid #55FF55; padding: 15px; width: 280px; text-align: left; font-size: 1.1em; z-index: 2000; box-shadow: 5px 5px 0 #000; line-height: 1.4; }
+        #counter-group { position: fixed; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 1000; }
+        .counter-tag { background: rgba(0,0,0,0.8); border: 2px solid #55FF55; padding: 5px 12px; font-size: 1.4em; color: #FFFF55; text-align: right; }
         .dictation-tag { border-color: #f1c40f; color: #f1c40f; }
-
         .mode-switch { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; }
-        .mode-btn {
-            padding: 6px 15px; font-family: 'VT323', sans-serif; cursor: pointer;
-            background: #777; border: 3px solid #333; color: #fff; font-size: 1.2em;
-        }
+        .mode-btn { padding: 6px 15px; font-family: 'VT323', sans-serif; cursor: pointer; background: #777; border: 3px solid #333; color: #fff; font-size: 1.2em; }
         .mode-active { background: #3498db !important; border-color: #fff !important; }
-
         h1 { color: #55FF55; text-shadow: 3px 3px #000; font-size: 2.2em; margin: 5px 0; }
         .canvas-area { position: relative; background: #fff; border: 8px solid #3d2b1f; width: 320px; height: 320px; margin: 10px auto; touch-action: none; }
         canvas { position: absolute; top: 0; left: 0; cursor: crosshair; }
@@ -57,7 +58,7 @@
         #targetWord { color: #55FF55; font-size: 1.8em; cursor: pointer; border-bottom: 2px dashed #FFFF55; padding: 0 10px; }
         #message { font-size: 1.6em; margin-top: 5px; color: #FFFF55; text-shadow: 2px 2px #000; min-height: 1.2em; }
         #steve-reward { position: fixed; bottom: -200px; left: 50%; transform: translateX(-50%); transition: 0.5s; z-index: 100; pointer-events: none; }
-        .show-steve { bottom: 20px !important; }
+        .show-steve { bottom: 45px !important; }
     </style>
 </head>
 <body>
@@ -65,12 +66,10 @@
 <div id="help-btn" onclick="toggleTooltip()">💡</div>
 <div id="tooltip-content">
     <b>iPad 廣東話語音設定：</b><br>
-    1. Settings (設定)<br>
-    2. Accessibility (輔助使用)<br>
-    3. Spoken Content (語音內容)<br>
-    4. Voices (聲音) -> Chinese (中文)<br>
-    5. Cantonese (廣東話 - 香港)<br>
-    6. 下載並選用「Sin-Ji (Premium)」
+    1. Settings (設定) -> 2. Accessibility (輔助使用)<br>
+    3. Spoken Content (語音內容) -> 4. Voices (聲音)<br>
+    5. Chinese (中文) -> 6. Cantonese (廣東話)<br>
+    7. 下載並選用「Sin-Ji (Premium)」
 </div>
 
 <div id="counter-group">
@@ -83,11 +82,11 @@
         <button id="modePractice" class="mode-btn mode-active" onclick="setMode('practice')">練習模式 (60%)</button>
         <button id="modeDictation" class="mode-btn" onclick="setMode('dictation')">聽默模式 (40%)</button>
     </div>
-    <h1>👾 CHINESE 145 QUEST 👾</h1>
+    <h1>👾 CHINESE 145 QUEST PRO 👾</h1>
     <div id="word-display-box">
         <span id="promptText">請寫出：</span>
         <span id="targetWord" onclick="revealHint()"></span>
-        <button class="btn btn-speak" onclick="speakWord()" style="display:inline-flex; vertical-align:middle; padding:5px 10px; margin-left:10px;">🔊 聽讀音</button>
+        <button class="btn btn-speak" onclick="speakWord()" style="display:inline-flex; vertical-align:middle; padding:5px 10px; margin-left:10px;">🔊 聽音</button>
     </div>
     <div class="canvas-area">
         <canvas id="templateCanvas" width="320" height="320"></canvas>
@@ -99,6 +98,16 @@
         <button class="btn btn-check" onclick="checkWriting()">✅ 檢查</button>
         <button class="btn btn-next" onclick="initGame()">⏭️ 下一字</button>
     </div>
+</div>
+
+<div id="xp-container">
+    <div id="xp-text">LEVEL 1</div>
+    <div id="xp-bar"></div>
+</div>
+
+<div id="tnt-box">
+    <div class="combo-count" id="comboText">COMBO x0</div>
+    <div class="tnt-sprite" id="tntImg">TNT</div>
 </div>
 
 <div id="steve-reward">
@@ -114,16 +123,13 @@
 <script>
     const wordBank = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "上", "下", "左", "右", "大", "小", "多", "少", "人", "口", "手", "足", "目", "耳", "心", "頭", "山", "水", "木", "禾", "土", "日", "月", "天", "火", "風", "雨", "電", "春", "夏", "秋", "冬", "爸", "媽", "哥", "姐", "弟", "妹", "男", "女", "老", "少", "師", "生", "友", "公", "婆", "校", "家", "門", "窗", "床", "椅", "桌", "燈", "筆", "書", "紙", "畫", "歌", "花", "草", "樹", "葉", "果", "米", "肉", "豆", "牛", "羊", "馬", "雞", "狗", "貓", "魚", "鳥", "中", "國", "香", "港", "出", "入", "開", "關", "來", "去", "坐", "立", "走", "跑", "跳", "飛", "聽", "說", "讀", "寫", "看", "見", "早", "午", "晚", "紅", "黃", "藍", "綠", "白", "黑", "金", "我", "父", "母", "雲", "單", "車", "休", "石", "的", "是", "球", "做", "會", "朋", "們", "力", "玉", "犬", "王", "明", "古", "衣", "弓", "巾", "地"];
 
-    let currentWord = "";
-    let currentMode = 'practice';
-    let practiceCorrect = 0;
-    let dictationCorrect = 0;
-    let isHintRevealed = false; // 新增：追蹤是否睇咗答案 [cite: 2026-02-15]
+    let currentWord = "", currentMode = 'practice';
+    let practiceCorrect = 0, dictationCorrect = 0, isHintRevealed = false;
+    let streak = 0, xp = 0, level = 1;
+
     const kaitiFont = '"Kaiti TC", "STKaiti", "BiauKai", "楷體", sans-serif';
-    const tCanvas = document.getElementById('templateCanvas');
-    const dCanvas = document.getElementById('drawCanvas');
-    const tCtx = tCanvas.getContext('2d');
-    const dCtx = dCanvas.getContext('2d');
+    const tCanvas = document.getElementById('templateCanvas'), dCanvas = document.getElementById('drawCanvas');
+    const tCtx = tCanvas.getContext('2d'), dCtx = dCanvas.getContext('2d');
     let drawing = false;
 
     function toggleTooltip() {
@@ -133,25 +139,32 @@
 
     function setMode(mode) { currentMode = mode; initGame(); }
     
-    function speakWord() { if (!currentWord) return; const msg = new SpeechSynthesisUtterance(currentWord); msg.lang = 'zh-HK'; msg.rate = 0.7; window.speechSynthesis.speak(msg); }
+    function speakWord() { 
+        if (!currentWord) return; 
+        const msg = new SpeechSynthesisUtterance(currentWord); 
+        msg.lang = 'zh-HK'; msg.rate = 0.7; 
+        window.speechSynthesis.speak(msg); 
+    }
     
     function revealHint() { 
         if (currentMode === 'dictation') { 
             document.getElementById('targetWord').innerText = currentWord; 
             document.getElementById('targetWord').style.color = "#FFFF55"; 
-            isHintRevealed = true; // 鎖定：呢題唔計分喇 [cite: 2026-02-15]
+            isHintRevealed = true;
+            streak = 0; // 睇咗提示就斷 Combo
+            updateComboUI();
         } 
     }
 
     function initGame() {
         currentWord = wordBank[Math.floor(Math.random() * wordBank.length)];
-        isHintRevealed = false; // 重置提示狀態
+        isHintRevealed = false;
         const targetWordEl = document.getElementById('targetWord');
         const tCanvasEl = document.getElementById('templateCanvas');
         if (currentMode === 'dictation') {
             targetWordEl.innerText = "???"; tCanvasEl.style.opacity = "0"; 
             document.getElementById('promptText').innerText = "聽音默寫：";
-            document.getElementById('message').innerText = "睇咗提示就唔計聽默分㗎！";
+            document.getElementById('message').innerText = "睇咗提示唔計分同斷 Combo 㗎！";
         } else {
             targetWordEl.innerText = currentWord; tCanvasEl.style.opacity = "0.15"; 
             document.getElementById('promptText').innerText = "請寫出：";
@@ -162,7 +175,7 @@
     }
 
     function setupDrawing() {
-        dCtx.strokeStyle = "#222"; dCtx.lineWidth = 15; dCtx.lineCap = "round"; dCtx.lineJoin = "round";
+        dCtx.strokeStyle = "#222"; dCtx.lineWidth = 18; dCtx.lineCap = "round"; dCtx.lineJoin = "round";
         const getPos = (e) => {
             const rect = dCanvas.getBoundingClientRect();
             const cx = (e.clientX || (e.touches && e.touches[0].clientX));
@@ -172,14 +185,13 @@
         const start = (e) => { drawing = true; const p = getPos(e); dCtx.beginPath(); dCtx.moveTo(p.x, p.y); };
         const move = (e) => { if (!drawing) return; const p = getPos(e); dCtx.lineTo(p.x, p.y); dCtx.stroke(); if(e.cancelable) e.preventDefault(); };
         const stop = () => { drawing = false; };
-        dCanvas.addEventListener('mousedown', start); window.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
-        dCanvas.addEventListener('touchstart', start, {passive: false}); dCanvas.addEventListener('touchmove', move, {passive: false}); window.addEventListener('touchend', stop);
+        dCanvas.onmousedown = dCanvas.ontouchstart = start; window.onmousemove = window.ontouchmove = move; window.onmouseup = window.ontouchend = stop;
     }
 
     function clearCanvas() { dCtx.clearRect(0, 0, 320, 320); document.getElementById('steve-reward').classList.remove('show-steve'); }
 
     function checkWriting() {
-        const tD = tCtx.getImageData(0, 0, 320, 320).data; const dD = dCtx.getImageData(0, 0, 320, 320).data;
+        const tD = tCtx.getImageData(0, 0, 320, 320).data, dD = dCtx.getImageData(0, 0, 320, 320).data;
         let tP = 0, mP = 0;
         for (let i = 3; i < tD.length; i += 4) { if (tD[i] > 10) { tP++; if (dD[i] > 10) mP++; } }
         const score = (mP / tP) * 100;
@@ -189,24 +201,73 @@
             document.getElementById('message').innerText = `好勁呀！${Math.round(score)}% 似！💎`;
             document.getElementById('steve-reward').classList.add('show-steve');
             
-            // 修改：檢查有無睇過提示 [cite: 2026-02-15]
+            // 邏輯處理
             if (currentMode === 'dictation') {
                 if (!isHintRevealed) {
                     dictationCorrect++;
                     document.getElementById('dictationCount').innerText = dictationCorrect;
+                    streak++; // 聽默無提示先加 Combo
                 } else {
-                    document.getElementById('message').innerText += " (睇咗答案唔計分㗎)";
+                    document.getElementById('message').innerText += " (睇咗提示唔計分)";
+                    streak = 0;
                 }
             } else {
                 practiceCorrect++;
                 document.getElementById('practiceCount').innerText = practiceCorrect;
+                streak = 0; // 練習模式唔計 Combo
             }
+
+            // XP 處理
+            xp += 20;
+            if (xp >= 100) { level++; xp = 0; document.getElementById('xp-text').innerText = "LEVEL " + level + " UP!"; setTimeout(() => document.getElementById('xp-text').innerText = "LEVEL " + level, 2000); }
+            
+            updateXPUI();
+            updateComboUI();
+            if (streak >= 5) triggerTNT();
+            
             speakWord();
             setTimeout(() => { if(confirm("大勝利！下一個？")) initGame(); }, 1200);
         } else {
-            document.getElementById('message').innerText = `得 ${Math.round(score)}%... 未到 ${threshold}% 呀！`;
+            document.getElementById('message').innerText = `得 ${Math.round(score)}%... 再試下！`;
+            streak = 0;
+            updateComboUI();
         }
     }
+
+    function updateXPUI() { document.getElementById('xp-bar').style.width = xp + "%"; }
+
+    function updateComboUI() {
+        const tntBox = document.getElementById('tnt-box');
+        if (streak > 0) {
+            tntBox.style.display = 'block';
+            document.getElementById('comboText').innerText = "COMBO x" + streak;
+        } else {
+            tntBox.style.display = 'none';
+        }
+    }
+
+    function triggerTNT() {
+        const tnt = document.getElementById('tntImg');
+        tnt.classList.add('exploding');
+        document.getElementById('message').innerText = "💥 BOOM! 5-COMBO 獎勵！ 💥";
+        spawnDiamonds();
+        setTimeout(() => { tnt.classList.remove('exploding'); streak = 0; updateComboUI(); }, 1000);
+    }
+
+    function spawnDiamonds() {
+        for (let i = 0; i < 30; i++) {
+            setTimeout(() => {
+                const d = document.createElement('div');
+                d.innerHTML = "💎"; d.style.position = "fixed"; d.style.top = "-50px";
+                d.style.left = Math.random() * 100 + "vw"; d.style.fontSize = "30px";
+                d.style.zIndex = "3000"; d.style.transition = "transform 2s linear, opacity 2s";
+                document.body.appendChild(d);
+                setTimeout(() => { d.style.transform = "translateY(110vh) rotate(360deg)"; d.style.opacity = "0"; }, 100);
+                setTimeout(() => d.remove(), 2500);
+            }, i * 100);
+        }
+    }
+
     window.onload = initGame;
 </script>
 </body>
