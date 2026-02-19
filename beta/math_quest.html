@@ -134,6 +134,7 @@
     import { db, doc, setDoc } from './firebase-config.js';
 
     let questions = [];
+    let isXpAwarded = false; // 紀錄呢場加咗分未
     let timeLeft = 120;
     let timerInterval = null;
 
@@ -194,34 +195,47 @@
         init();
     };
 
-    window.checkAll = function() {
-        let score = 0;
-        questions.forEach((d, i) => {
-            const inputEl = document.getElementById(`ans-${i}`);
-            if (inputEl) {
-                const val = parseInt(inputEl.value);
-                inputEl.classList.remove('correct', 'wrong');
-                if (val === d.ans) { score++; inputEl.classList.add('correct'); }
-                else { inputEl.classList.add('wrong'); }
-            }
-        });
-        const scoreBox = document.getElementById('score-box');
-        if (scoreBox) scoreBox.innerHTML = "SCORE: " + score + " / 20";
-        
-        if (score === 20) {
-            clearInterval(timerInterval);
-            startHeroStampede();
-            if (timeLeft > 0) spawnFriedChicken();
-            addXP(20); // 滿分加 20 XP 並同步雲端
-        } else {
-            const fw = document.querySelector('.wrong');
-            if (fw) fw.scrollIntoView({ behavior: 'smooth', block: 'center' });
+window.checkAll = function() {
+    let score = 0;
+    questions.forEach((d, i) => {
+        const inputEl = document.getElementById(`ans-${i}`);
+        if (inputEl) {
+            const val = parseInt(inputEl.value);
+            inputEl.classList.remove('correct', 'wrong');
+            if (val === d.ans) { score++; inputEl.classList.add('correct'); }
+            else { inputEl.classList.add('wrong'); }
         }
-    };
+    });
+
+    const scoreBox = document.getElementById('score-box');
+    if (scoreBox) scoreBox.innerHTML = "SCORE: " + score + " / 20";
+    
+    // --- 防刷分邏輯 ---
+    if (score === 20) {
+        clearInterval(timerInterval);
+        
+        // 只有「未領獎」先會執行加分同特效
+        if (!isXpAwarded) {
+            if (typeof startHeroStampede === 'function') startHeroStampede();
+            if (timeLeft > 0 && typeof spawnFriedChicken === 'function') spawnFriedChicken();
+            
+            addXP(20);        // 領獎同步去 Firebase
+            isXpAwarded = true; // 鎖死，呢場唔准再領
+            
+            if (scoreBox) scoreBox.innerHTML += "<br>💎 LEVEL CLEAR! REWARD CLAIMED! 💎";
+        } else {
+            if (scoreBox) scoreBox.innerHTML += "<br>💎 (Already claimed) 💎";
+        }
+    } else {
+        const fw = document.querySelector('.wrong');
+        if (fw) fw.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+};
 
     // 5. 遊戲生成 Logic
     function init() {
         initHero();
+        isXpAwarded = false; // 重啟遊戲，解開獎勵鎖
         const grid = document.getElementById('quizGrid');
         if (!grid) return;
 
