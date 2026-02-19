@@ -17,6 +17,7 @@
         const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
         const xp = localStorage.getItem('jovan_total_xp') || 0;
         
+        // 絕對對準 ID: hero-name 同 display-xp
         safeUpdateText('hero-name', name);
         safeUpdateText('display-xp', xp);
     }
