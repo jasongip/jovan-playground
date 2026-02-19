@@ -152,6 +152,7 @@
     let currentWord = "", currentMode = 'practice';
     let practiceCorrect = 0, dictationCorrect = 0, isHintRevealed = false;
     let streak = 0, xp = 0, level = 1;
+    let isXpAwarded = false; // 紀錄呢個字加咗分未
 
     const kaitiFont = '"Kaiti TC", "STKaiti", "BiauKai", "楷體", sans-serif';
     const tCanvas = document.getElementById('templateCanvas'), dCanvas = document.getElementById('drawCanvas');
@@ -215,6 +216,7 @@
 
     window.initGame = function() {
         initHero();
+        isXpAwarded = false; // 重要：換新字，重設獎勵鎖
         currentWord = wordBank[Math.floor(Math.random() * wordBank.length)];
         isHintRevealed = false;
         const targetWordEl = document.getElementById('targetWord');
@@ -238,42 +240,57 @@
         if(reward) reward.classList.remove('show-steve'); 
     };
 
-    window.checkWriting = function() {
-        const tD = tCtx.getImageData(0, 0, 320, 320).data, dD = dCtx.getImageData(0, 0, 320, 320).data;
-        let tP = 0, mP = 0;
-        for (let i = 3; i < tD.length; i += 4) { if (tD[i] > 10) { tP++; if (dD[i] > 10) mP++; } }
-        const score = (mP / tP) * 100;
-        const threshold = (currentMode === 'dictation') ? 40 : 60;
+window.checkWriting = function() {
+    const tD = tCtx.getImageData(0, 0, 320, 320).data, dD = dCtx.getImageData(0, 0, 320, 320).data;
+    let tP = 0, mP = 0;
+    for (let i = 3; i < tD.length; i += 4) { if (tD[i] > 10) { tP++; if (dD[i] > 10) mP++; } }
+    const score = (mP / tP) * 100;
+    const threshold = (currentMode === 'dictation') ? 40 : 60;
+    
+    if (score >= threshold) {
+        safeUpdateText('message', `好勁呀！${Math.round(score)}% 似！💎`);
+        document.getElementById('steve-reward').classList.add('show-steve');
         
-        if (score >= threshold) {
-            safeUpdateText('message', `好勁呀！${Math.round(score)}% 似！💎`);
-            document.getElementById('steve-reward').classList.add('show-steve');
-            
+        // --- 核心防刷分 Logic ---
+        if (!isXpAwarded) {
             if (currentMode === 'dictation') {
                 if (!isHintRevealed) {
                     dictationCorrect++; safeUpdateText('dictationCount', dictationCorrect);
-                    streak++; addGlobalXP(3); // 聽默 +3
+                    streak++; 
+                    addGlobalXP(3); // 聽默 +3 XP
                 } else {
                     document.getElementById('message').innerText += " (睇咗提示唔計分)";
                     streak = 0;
                 }
             } else {
                 practiceCorrect++; safeUpdateText('practiceCount', practiceCorrect);
-                streak = 0; addGlobalXP(1); // 練習 +1
+                streak = 0; 
+                addGlobalXP(1); // 練習 +1 XP
             }
-
-            xp += 20;
-            if (xp >= 100) { level++; xp = 0; safeUpdateText('xp-text', "LEVEL " + level + " UP!"); setTimeout(() => safeUpdateText('xp-text', "LEVEL " + level), 2000); }
             
-            updateXPUI(); updateComboUI();
-            if (streak >= 5) triggerTNT();
-            speakWord();
-            setTimeout(() => { if(confirm("大勝利！下一個？")) initGame(); }, 1200);
+            // 本地 Level Up XP 照加 (因為呢個係 Session 內嘅，唔影響排名榜)
+            xp += 20;
+            if (xp >= 100) { 
+                level++; xp = 0; 
+                safeUpdateText('xp-text', "LEVEL " + level + " UP!"); 
+                setTimeout(() => safeUpdateText('xp-text', "LEVEL " + level), 2000); 
+            }
+            
+            isXpAwarded = true; // 鎖死：呢個字嘅 Global XP 已經攞咗喇！
         } else {
-            safeUpdateText('message', `得 ${Math.round(score)}%... 再試下！`);
-            streak = 0; updateComboUI();
+            document.getElementById('message').innerText += " (Score checked!)";
         }
-    };
+        // -----------------------
+
+        updateXPUI(); updateComboUI();
+        if (streak >= 5) triggerTNT();
+        speakWord();
+        setTimeout(() => { if(confirm("大勝利！下一個？")) initGame(); }, 1200);
+    } else {
+        safeUpdateText('message', `得 ${Math.round(score)}%... 再試下！`);
+        streak = 0; updateComboUI();
+    }
+};
 
     function setupDrawing() {
         dCtx.strokeStyle = "#222"; dCtx.lineWidth = 18; dCtx.lineCap = "round"; dCtx.lineJoin = "round";
