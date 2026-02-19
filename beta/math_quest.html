@@ -1,28 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jovan's Math Quest: Cloud RPG</title>
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8Z53DTDB23"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-8Z53DTDB23');
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'VT323', monospace; 
+            background-color: #4aa02c; 
+            background-image: repeating-conic-gradient(#4aa02c 0% 25%, #449028 0% 50%);
+            background-size: 60px 60px;
+            color: #fff; padding: 10px; overflow-x: hidden; 
+        }
+        .container { max-width: 900px; margin: auto; text-align: center; position: relative; z-index: 20; }
+        
+        /* 英雄狀態欄樣式 (標準套裝) */
+        #hero-status {
+            background: #3d2b1f; border: 4px solid #1a120c; border-radius: 15px;
+            max-width: 600px; margin: 0 auto 20px; padding: 15px; text-align: center;
+            color: #fff; box-shadow: 0 6px 0 #000;
+        }
+        #hero-name { color: #FFFF55; font-size: 1.8em; text-shadow: 2px 2px #000; margin-bottom: 5px; }
+        .display-xp-text { color: #55FF55; font-size: 1.4em; }
+
+        #settings-btn {
+            position: fixed; top: 10px; left: 10px; 
+            background: #777; border: 3px solid #fff; padding: 5px 15px;
+            font-size: 1.5em; cursor: pointer; z-index: 1001; color: #fff;
+        }
+        #settings-panel {
+            display: none; position: fixed; top: 60px; left: 10px;
+            background: rgba(0,0,0,0.9); border: 4px solid #3d2b1f;
+            padding: 15px; width: 200px; text-align: left; z-index: 1001;
+            box-shadow: 5px 5px 0 #000;
+        }
+        .check-item { display: block; margin: 8px 0; font-size: 1.4em; color: #FFFF55; cursor: pointer; }
+        .check-item input { margin-right: 10px; transform: scale(1.5); }
+
+        #timer { 
+            position: fixed; top: 10px; right: 10px; 
+            background: rgba(0,0,0,0.8); padding: 10px 20px; 
+            border: 4px solid #fff; font-size: 2.2em; z-index: 1000;
+            color: #55FF55; min-width: 100px;
+        }
+        .time-over { color: #888 !important; border-color: #555 !important; }
+
+        h1 { color: #fff; text-shadow: 5px 5px #000; font-size: 2.5em; margin: 10px 0; }
+        .quiz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 10px; }
+        .q-block { background: #8b5e3c; border: 4px solid #3d2b1f; padding: 10px; display: flex; align-items: center; justify-content: space-around; box-shadow: 4px 4px 0 #22130c; }
+        .q-text { font-size: 2em; text-shadow: 2px 2px #000; }
+        input[type="number"] { width: 70px; padding: 5px; border: 3px solid #333; background: #ddd; text-align: center; font-size: 1.6em; font-family: 'VT323', monospace; outline: none; }
+        input.wrong { border-color: #ff0000; background: #ffcccc; box-shadow: 0 0 10px #ff0000; }
+        input.correct { border-color: #00ff00; background: #ccffcc; box-shadow: 0 0 10px #00ff00; }
+
+        #mob-field { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 15; display: block; }
+        .mob { position: absolute; left: -150px; display: block !important; }
+        .steve { width: 50px; height: 80px; z-index: 101; }
+        .steve-head { width: 30px; height: 30px; background: #EBD2B2; margin: 0 auto; border: 2px solid #000; position: relative; }
+        .steve-hair { width: 100%; height: 8px; background: #3d2b1f; position: absolute; top: 0; }
+        .steve-eye { width: 4px; height: 4px; background: #fff; position: absolute; top: 15px; box-shadow: 15px 0 #fff, 2px 0 #4040FF, 17px 0 #4040FF; }
+        .steve-body { width: 40px; height: 40px; background: #00AFAF; margin: -2px auto; border: 2px solid #000; }
+        .steve-pants { width: 40px; height: 15px; background: #4040FF; margin: -2px auto; border: 2px solid #000; }
+        .diamond-sword { position: absolute; right: -25px; top: 20px; width: 10px; height: 40px; background: #70f3ff; border: 2px solid #3d2b1f; transform: rotate(45deg); animation: swing 0.3s infinite alternate; }
+        @keyframes swing { from { transform: rotate(20deg); } to { transform: rotate(70deg); } }
+        .creeper { width: 50px; height: 70px; background: #51a03e; border: 2px solid #000; z-index: 100; }
+        .creeper-face { width: 30px; height: 30px; margin: 10px auto; background: #000; clip-path: polygon(0% 20%, 20% 20%, 20% 0%, 80% 0%, 80% 20%, 100% 20%, 100% 60%, 80% 60%, 80% 40%, 60% 40%, 60% 80%, 80% 80%, 80% 100%, 20% 100%, 20% 80%, 40% 80%, 40% 40%, 20% 40%, 20% 60%, 0% 60%); }
+        .pig { width: 60px; height: 45px; background: #ff99aa; border: 2px solid #000; position: relative; z-index: 100; }
+        .pig-eye { position: absolute; width: 6px; height: 6px; background: #fff; top: 10px; box-shadow: 30px 0 #fff, 2px 0 #000, 32px 0 #000; }
+        .pig-nose { position: absolute; width: 20px; height: 12px; background: #ff5577; bottom: 8px; left: 20px; border: 1px solid #000; }
+
+        .btn-check { background: #4aa02c; color: #fff; border: 5px solid #2d601a; border-bottom-width: 10px; padding: 15px 40px; font-size: 2em; font-family: 'VT323', monospace; cursor: pointer; margin-top: 25px; text-shadow: 2px 2px #000; width: 100%; }
+        .btn-check:active { border-bottom-width: 4px; transform: translateY(6px); }
+        #score-box { font-size: 2.5em; color: #FFFF55; text-shadow: 3px 3px #000; margin: 15px 0; }
+        .chicken { position: fixed; top: -50px; font-size: 40px; z-index: 500; pointer-events: none; animation: fall linear forwards; }
+        @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+        .destroyed { animation: explode 0.5s forwards; pointer-events: none; }
+        @keyframes explode { 0% { transform: scale(1); } 50% { transform: scale(1.1); filter: brightness(1.5); } 100% { transform: scale(0) rotate(15deg); opacity: 0; } }
+
+        @keyframes fadeUp {
+            0% { transform: translate(-50%, 0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(-50%, -100px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="settings-btn" onclick="toggleSettings()">⚙️ SETTINGS</div>
+<div id="settings-panel">
+    <div style="font-size: 1.2em; border-bottom: 2px solid #fff; margin-bottom: 10px;">Pick Tables:</div>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="1" checked> Table 1</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="2" checked> Table 2</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="3" checked> Table 3</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="4" checked> Table 4</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="5" checked> Table 5</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="6" checked> Table 6</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="7" checked> Table 7</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="8"> Table 8</label>
+    <label class="check-item"><input type="checkbox" class="table-opt" value="9"> Table 9</label>
+    <button onclick="toggleSettings(); resetGame();" style="width:100%; margin-top:10px; font-family:'VT323'; background:#55FF55;">UPDATE & RESTART</button>
+</div>
+
+<div id="timer">120s</div>
+
+<div class="container">
+    <h1>⚔️ MATH QUEST RPG ⚔️</h1>
+
+    <div id="hero-status">
+        <div id="hero-name">Loading Explorer...</div>
+        <div class="display-xp-text">TOTAL XP: <span id="display-xp">0</span></div>
+    </div>
+
+    <p>20 Questions | Max $x10$</p>
+    <div class="quiz-grid" id="quizGrid"></div>
+    <button class="btn-check" onclick="checkAll()">CHECK ANSWERS!</button>
+    <div id="score-box"></div>
+</div>
+
+<div id="mob-field"></div>
+
 <script type="module">
-    // 1. 引入 Firebase
+    // 1. 引入 Firebase 設定
     import { db, doc, setDoc } from './firebase-config.js';
 
     let questions = [];
     let timeLeft = 120;
     let timerInterval = null;
 
-    // --- 防禦機制：檢查 ID 是否存在才更新，避免 null 報錯 ---
+    // --- 防禦機制：檢查 ID 是否存在才更新 ---
     function safeUpdateText(id, text) {
         const el = document.getElementById(id);
         if (el) el.innerText = text;
     }
 
-    // 2. 初始化英雄資料 (防撞版)
+    // 2. 初始化英雄資料
     function initHero() {
         const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
         const xp = localStorage.getItem('jovan_total_xp') || 0;
-        
-        // 絕對對準 ID: hero-name 同 display-xp
         safeUpdateText('hero-name', name);
         safeUpdateText('display-xp', xp);
     }
 
-    // 3. 雲端加分邏輯 (同步至 Firebase)
+    // 3. 雲端加分邏輯 (Firebase Sync)
     async function addXP(amount) {
         let currentXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
         let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
@@ -81,9 +210,9 @@
         
         if (score === 20) {
             clearInterval(timerInterval);
-            if (typeof startHeroStampede === 'function') startHeroStampede();
-            if (timeLeft > 0 && typeof spawnFriedChicken === 'function') spawnFriedChicken();
-            addXP(20); 
+            startHeroStampede();
+            if (timeLeft > 0) spawnFriedChicken();
+            addXP(20); // 滿分加 20 XP 並同步雲端
         } else {
             const fw = document.querySelector('.wrong');
             if (fw) fw.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -114,10 +243,9 @@
             </div>
         `).join('');
         
-        if (typeof startTimer === 'function') startTimer();
+        startTimer();
     }
 
-    // --- 輔助動畫與計時器 (搬入 module 內部) ---
     function startTimer() {
         if (timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(() => {
@@ -181,3 +309,5 @@
     // 啟動！
     window.onload = init;
 </script>
+</body>
+</html>
