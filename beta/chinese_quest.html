@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jovan's Chinese Challenge Combat Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <title>Jovan's Chinese Quest: Cloud RPG</title>
+    
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8Z53DTDB23"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-    
       gtag('config', 'G-8Z53DTDB23');
     </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         body { 
             font-family: 'VT323', "Kaiti TC", "STKaiti", "BiauKai", "Apple LiSung", "標楷體", "DFKai-SB", sans-serif; 
@@ -20,6 +21,15 @@
             background-image: repeating-conic-gradient(#5c3c21 0% 25%, #4e341c 0% 50%);
             background-size: 40px 40px; color: #fff; padding: 10px; text-align: center; overflow: hidden;
         }
+
+        /* RPG 英雄狀態欄樣式 (標準套裝) */
+        #hero-status {
+            background: #3d2b1f; border: 4px solid #1a120c; border-radius: 15px;
+            max-width: 600px; margin: 0 auto 15px; padding: 12px; text-align: center;
+            color: #fff; box-shadow: 0 6px 0 #000;
+        }
+        #hero-name { color: #FFFF55; font-size: 1.8em; text-shadow: 2px 2px #000; margin-bottom: 5px; }
+        .global-xp-display { color: #55FF55; font-size: 1.4em; }
 
         /* XP Bar 樣式 */
         #xp-container { position: fixed; bottom: 0; left: 0; width: 100%; height: 25px; background: #222; border-top: 4px solid #000; z-index: 2000; }
@@ -35,7 +45,6 @@
         }
         .combo-count { position: absolute; top: -25px; left: 0; width: 100%; color: #ffff55; font-size: 1.8em; text-shadow: 2px 2px #000; }
 
-        /* 爆炸動畫 */
         @keyframes explode {
             0% { transform: scale(1); filter: brightness(1); }
             50% { transform: scale(1.4); filter: brightness(3); }
@@ -43,7 +52,6 @@
         }
         .exploding { animation: explode 0.5s forwards; }
 
-        /* 原有樣式 */
         #help-btn { position: fixed; top: 10px; left: 10px; background: #f1c40f; border: 3px solid #fff; border-radius: 50%; width: 40px; height: 40px; line-height: 40px; font-size: 1.5em; cursor: pointer; z-index: 2000; box-shadow: 3px 3px 0 #000; }
         #tooltip-content { display: none; position: fixed; top: 60px; left: 10px; background: rgba(0,0,0,0.9); border: 2px solid #55FF55; padding: 15px; width: 280px; text-align: left; font-size: 1.1em; z-index: 2000; box-shadow: 5px 5px 0 #000; line-height: 1.4; }
         #counter-group { position: fixed; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 1000; }
@@ -68,16 +76,6 @@
         #steve-reward { position: fixed; bottom: -200px; left: 50%; transform: translateX(-50%); transition: 0.5s; z-index: 100; pointer-events: none; }
         .show-steve { bottom: 45px !important; }
 
-        /* RPG 英雄狀態欄樣式 (標準套裝) */
-        #hero-status {
-            background: #3d2b1f; border: 4px solid #1a120c; border-radius: 15px;
-            max-width: 600px; margin: 0 auto 15px; padding: 12px; text-align: center;
-            color: #fff; box-shadow: 0 6px 0 #000;
-        }
-        #hero-name { color: #FFFF55; font-size: 1.8em; text-shadow: 2px 2px #000; margin-bottom: 5px; }
-        .global-xp-display { color: #55FF55; font-size: 1.4em; }
-        
-        /* XP 獲得動畫 */
         @keyframes fadeUp {
             0% { transform: translate(-50%, 0); opacity: 0; }
             50% { opacity: 1; }
@@ -90,20 +88,19 @@
 <div id="help-btn" onclick="toggleTooltip()">💡</div>
 <div id="tooltip-content">
     <b>iPad 廣東話語音設定：</b><br>
-    1. Settings (設定) -> 2. Accessibility (輔助使用)<br>
-    3. Spoken Content (語音內容) -> 4. Voices (聲音)<br>
-    5. Chinese (中文) -> 6. Cantonese (廣東話)<br>
-    7. 下載並選用「Sin-Ji (Premium)」
+    1. Settings -> 2. Accessibility -> 3. Spoken Content -> 4. Voices -> 5. Chinese -> 6. Cantonese -> 7. Sin-Ji (Premium)
 </div>
 
 <div id="counter-group">
     <div class="counter-tag">練習總數: <span id="practiceCount">0</span></div>
     <div class="counter-tag dictation-tag">聽默正解: <span id="dictationCount">0</span></div>
 </div>
+
 <div id="hero-status">
     <div id="hero-name">Loading Identity...</div>
     <div class="global-xp-display">TOTAL XP: <span id="display-xp">0</span></div>
 </div>
+
 <div class="container">
     <div class="mode-switch">
         <button id="modePractice" class="mode-btn mode-active" onclick="setMode('practice')">練習模式 (60%)</button>
@@ -148,7 +145,6 @@
 </div>
 
 <script type="module">
-    // 1. 引入 Firebase
     import { db, doc, setDoc } from './firebase-config.js';
 
     const wordBank = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "上", "下", "左", "右", "大", "小", "多", "少", "人", "口", "手", "足", "目", "耳", "心", "頭", "山", "水", "木", "禾", "土", "日", "月", "天", "火", "風", "雨", "電", "春", "夏", "秋", "冬", "爸", "媽", "哥", "姐", "弟", "妹", "男", "女", "老", "少", "師", "生", "友", "公", "婆", "校", "家", "門", "窗", "床", "椅", "桌", "燈", "筆", "書", "紙", "畫", "歌", "花", "草", "樹", "葉", "果", "米", "肉", "豆", "牛", "羊", "馬", "雞", "狗", "貓", "魚", "鳥", "中", "國", "香", "港", "出", "入", "開", "關", "來", "去", "坐", "立", "走", "跑", "跳", "飛", "聽", "說", "讀", "寫", "看", "見", "早", "午", "晚", "紅", "黃", "藍", "綠", "白", "黑", "金", "我", "父", "母", "雲", "單", "車", "休", "石", "的", "是", "球", "做", "會", "朋", "們", "力", "玉", "犬", "王", "明", "古", "衣", "弓", "巾", "地"];
@@ -162,13 +158,11 @@
     const tCtx = tCanvas.getContext('2d'), dCtx = dCanvas.getContext('2d');
     let drawing = false;
 
-    // --- 防禦機制：檢查 ID 是否存在才更新 ---
     function safeUpdateText(id, text) {
         const el = document.getElementById(id);
         if (el) el.innerText = text;
     }
 
-    // 2. 初始化英雄資料
     function initHero() {
         const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
         const globalXp = localStorage.getItem('jovan_total_xp') || 0;
@@ -176,11 +170,9 @@
         safeUpdateText('display-xp', globalXp);
     }
 
-    // 3. 雲端加分系統 (Firebase Sync)
     async function addGlobalXP(amount) {
         let currentXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
         let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
-        
         currentXP += amount;
         localStorage.setItem('jovan_total_xp', currentXP);
         safeUpdateText('display-xp', currentXP);
@@ -193,15 +185,11 @@
 
         try {
             await setDoc(doc(db, "leaderboard", heroName), {
-                name: heroName,
-                xp: currentXP,
-                lastUpdate: new Date()
+                name: heroName, xp: currentXP, lastUpdate: new Date()
             }, { merge: true });
-            console.log("Chinese Cloud Sync Success!");
         } catch (e) { console.error("Cloud Sync Error:", e); }
     }
 
-    // 4. 掛載功能到 window
     window.toggleTooltip = function() {
         const content = document.getElementById('tooltip-content');
         if(content) content.style.display = (content.style.display === 'block') ? 'none' : 'block';
@@ -221,8 +209,7 @@
             document.getElementById('targetWord').innerText = currentWord; 
             document.getElementById('targetWord').style.color = "#FFFF55"; 
             isHintRevealed = true;
-            streak = 0; 
-            updateComboUI();
+            streak = 0; updateComboUI();
         } 
     };
 
@@ -232,21 +219,14 @@
         isHintRevealed = false;
         const targetWordEl = document.getElementById('targetWord');
         const tCanvasEl = document.getElementById('templateCanvas');
-        const modePracticeBtn = document.getElementById('modePractice');
-        const modeDictationBtn = document.getElementById('modeDictation');
-
         if (currentMode === 'dictation') {
             targetWordEl.innerText = "???"; tCanvasEl.style.opacity = "0"; 
             safeUpdateText('promptText', "聽音默寫：");
             safeUpdateText('message', "睇咗提示唔計分同斷 Combo 㗎！");
-            modeDictationBtn.classList.add('mode-active');
-            modePracticeBtn.classList.remove('mode-active');
         } else {
             targetWordEl.innerText = currentWord; tCanvasEl.style.opacity = "0.15"; 
             safeUpdateText('promptText', "請寫出：");
             safeUpdateText('message', "練習模式，加油！");
-            modePracticeBtn.classList.add('mode-active');
-            modeDictationBtn.classList.remove('mode-active');
         }
         tCtx.clearRect(0, 0, 320, 320); tCtx.fillStyle = "#cccccc"; tCtx.font = "220px " + kaitiFont; tCtx.textAlign = "center"; tCtx.textBaseline = "middle"; tCtx.fillText(currentWord, 160, 165);
         clearCanvas(); setupDrawing();
@@ -271,34 +251,27 @@
             
             if (currentMode === 'dictation') {
                 if (!isHintRevealed) {
-                    dictationCorrect++;
-                    safeUpdateText('dictationCount', dictationCorrect);
-                    streak++; 
-                    addGlobalXP(3); // 聽默模式加 3 分
+                    dictationCorrect++; safeUpdateText('dictationCount', dictationCorrect);
+                    streak++; addGlobalXP(3); // 聽默 +3
                 } else {
                     document.getElementById('message').innerText += " (睇咗提示唔計分)";
                     streak = 0;
                 }
             } else {
-                practiceCorrect++;
-                safeUpdateText('practiceCount', practiceCorrect);
-                streak = 0; 
-                addGlobalXP(1); // 練習模式加 1 分
+                practiceCorrect++; safeUpdateText('practiceCount', practiceCorrect);
+                streak = 0; addGlobalXP(1); // 練習 +1
             }
 
             xp += 20;
             if (xp >= 100) { level++; xp = 0; safeUpdateText('xp-text', "LEVEL " + level + " UP!"); setTimeout(() => safeUpdateText('xp-text', "LEVEL " + level), 2000); }
             
-            updateXPUI();
-            updateComboUI();
+            updateXPUI(); updateComboUI();
             if (streak >= 5) triggerTNT();
-            
             speakWord();
             setTimeout(() => { if(confirm("大勝利！下一個？")) initGame(); }, 1200);
         } else {
             safeUpdateText('message', `得 ${Math.round(score)}%... 再試下！`);
-            streak = 0;
-            updateComboUI();
+            streak = 0; updateComboUI();
         }
     };
 
@@ -317,26 +290,17 @@
     }
 
     function updateXPUI() { const bar = document.getElementById('xp-bar'); if(bar) bar.style.width = xp + "%"; }
-
     function updateComboUI() {
         const tntBox = document.getElementById('tnt-box');
-        if (streak > 0) {
-            if(tntBox) tntBox.style.display = 'block';
-            safeUpdateText('comboText', "COMBO x" + streak);
-        } else {
-            if(tntBox) tntBox.style.display = 'none';
-        }
+        if (streak > 0) { if(tntBox) tntBox.style.display = 'block'; safeUpdateText('comboText', "COMBO x" + streak); }
+        else { if(tntBox) tntBox.style.display = 'none'; }
     }
-
     function triggerTNT() {
-        const tnt = document.getElementById('tntImg');
-        if(tnt) tnt.classList.add('exploding');
+        const tnt = document.getElementById('tntImg'); if(tnt) tnt.classList.add('exploding');
         safeUpdateText('message', "💥 BOOM! 5-COMBO 獎勵！ 💥");
-        spawnDiamonds();
-        addGlobalXP(5); // Combo 獎勵
+        spawnDiamonds(); addGlobalXP(5); // TNT +5
         setTimeout(() => { if(tnt) tnt.classList.remove('exploding'); streak = 0; updateComboUI(); }, 1000);
     }
-
     function spawnDiamonds() {
         for (let i = 0; i < 30; i++) {
             setTimeout(() => {
@@ -350,7 +314,6 @@
             }, i * 100);
         }
     }
-
     window.onload = initGame;
 </script>
 </body>
