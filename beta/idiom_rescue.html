@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jovan's Idiom Rescue: RPG Edition</title>
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8Z53DTDB23"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-8Z53DTDB23');
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'VT323', "Kaiti TC", "楷體", sans-serif; 
+            background-color: #4aa02c; 
+            background-image: repeating-conic-gradient(#4aa02c 0% 25%, #449028 0% 50%);
+            background-size: 60px 60px; color: #fff; text-align: center; margin: 0; padding: 10px; overflow-x: hidden;
+        }
+
+        #hero-status {
+            background: #3d2b1f; border: 4px solid #1a120c; border-radius: 15px;
+            max-width: 600px; margin: 0 auto 15px; padding: 12px; text-align: center;
+            color: #fff; box-shadow: 0 6px 0 #000;
+        }
+        #hero-name { color: #FFFF55; font-size: 1.8em; text-shadow: 2px 2px #000; margin-bottom: 5px; }
+        .global-xp-display { color: #55FF55; font-size: 1.4em; }
+
+        #rescue-scene { position: relative; width: 220px; height: 220px; margin: 15px auto; background: #999; border: 8px solid #3d2b1f; border-radius: 10px; box-shadow: 0 10px 0 rgba(0,0,0,0.5); }
+        #animal { font-size: 110px; line-height: 200px; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        .bars-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: space-around; padding: 0 10px; box-sizing: border-box; z-index: 10; }
+        .bar { width: 12px; height: 100%; background: #555; border-left: 4px solid #777; border-right: 4px solid #333; transition: transform 0.8s, opacity 0.5s; }
+        .bar.removed { transform: translateY(-110%); opacity: 0; }
+
+        .unlocked #animal { transform: scale(1.3) rotate(10deg); text-shadow: 0 0 20px #fff; }
+
+        .slot-container { display: flex; justify-content: center; gap: 8px; margin: 15px 0; }
+        .slot { width: 65px; height: 65px; background: rgba(0,0,0,0.6); border: 4px solid #fff; border-radius: 10px; font-size: 40px; line-height: 65px; color: #FFFF55; transition: 0.3s; }
+        .slot.correct-slot { border-color: #55FF55; background: rgba(85, 255, 85, 0.2); }
+
+        .card-container { display: flex; justify-content: center; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+        .word-card { 
+            width: 75px; height: 75px; background: #8b5e3c; border: 4px solid #3d2b1f; 
+            border-bottom-width: 8px; border-radius: 10px; font-size: 40px; line-height: 75px; 
+            cursor: pointer; transition: 0.1s; color: #fff; box-shadow: 0 4px 0 #000;
+        }
+        .word-card:active { transform: translateY(4px); border-bottom-width: 4px; }
+        .word-card.used { opacity: 0; pointer-events: none; }
+
+        #message { font-size: 1.6em; color: #FFFF55; text-shadow: 2px 2px #000; min-height: 1.2em; margin: 10px 0; }
+        .btn { padding: 10px 25px; font-family: 'VT323'; font-size: 1.4em; cursor: pointer; border: 4px solid #333; color: #fff; background: #3498db; margin: 5px; border-bottom-width: 6px; }
+        .btn:active { transform: translateY(4px); border-bottom-width: 2px; }
+        .btn-speak { background: #f1c40f; color: #000; }
+
+        #collection-shelf { background: rgba(0,0,0,0.4); border: 4px solid #3d2b1f; border-radius: 15px; margin: 20px auto; max-width: 900px; padding: 15px; min-height: 60px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .collected-animal { font-size: 35px; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 5px; animation: popIn 0.5s forwards; }
+        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        #xp-container { position: fixed; bottom: 0; left: 0; width: 100%; height: 15px; background: #222; z-index: 100; }
+        #xp-bar { height: 100%; width: 0%; background: #55FF55; transition: width 0.5s; }
+
+        @keyframes fadeUp {
+            0% { transform: translate(-50%, 0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(-50%, -100px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 style="text-shadow: 3px 3px #000; color: #55FF55; margin: 10px 0;">🐾 IDIOM RESCUE RPG 🐾</h1>
+
+    <div id="hero-status">
+        <div id="hero-name">Loading Identity...</div>
+        <div class="global-xp-display">TOTAL XP: <span id="global-total-xp">0</span></div>
+    </div>
+
+    <div id="rescue-scene">
+        <div class="bars-container" id="bars">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        </div>
+        <div id="animal">🐷</div>
+    </div>
+
+    <div id="message">答啱 4 個成語就救到動物！</div>
+
+    <div style="margin-bottom: 10px;">
+        <button class="btn btn-speak" onclick="speakIdiom()">🔊 聽讀音 (Listen)</button>
+    </div>
+
+    <div class="slot-container" id="slot-actual">
+        <div class="slot" id="slot-0"></div><div class="slot" id="slot-1"></div>
+        <div class="slot" id="slot-2"></div><div class="slot" id="slot-3"></div>
+    </div>
+
+    <div class="card-container" id="cards"></div>
+
+    <div style="margin-top: 15px;">
+        <button class="btn" style="background:#e74c3c" onclick="resetSlots()">🗑️ 重試題 (Reset)</button>
+        <button class="btn" id="nextQuestBtn" style="display:none; background:#f1c40f; color:#000;" onclick="startNewIdiomInRescue()">⏭️ 下一關 (Next Quest)</button>
+        <button class="btn" id="finishRescueBtn" style="display:none; background:#55FF55; color:#000;" onclick="initRescueSession()">🎁 救下一隻 (New Animal)</button>
+    </div>
+
+    <h3 style="margin-bottom: 5px; text-shadow: 2px 2px #000;">My Collection (已救動物: <span id="saveCount">0</span>)</h3>
+    <div id="collection-shelf"></div>
+
+    <div id="xp-container"><div id="xp-bar"></div></div>
+
+    <script type="module">
+        import { db, doc, setDoc } from './firebase-config.js';
+
+        const idiomDB = [
+            { word: "一五一十", hint: "豬仔想聽你講得清清楚楚！" }, { word: "一心一意", hint: "羊仔想你專心救佢！" },
+            { word: "三心二意", hint: "唔好諗住玩 Minecraft 呀，專心啲！" }, { word: "四通八達", hint: "呢條路好似礦坑咁周圍都去到。" },
+            { word: "五光十色", hint: "牛牛鍾意彩色嘅世界！" }, { word: "六神無主", hint: "小雞嚇到唔知去咗邊！" },
+            { word: "七上八下", hint: "救唔到狐狸仔，心跳得好快！" }, { word: "八仙過海", hint: "大家一齊用超能力救動物！" },
+            { word: "九牛一毛", hint: "救一隻牛牛只係好小事！" }, { word: "十全十美", hint: "救晒所有動物就最完美喇！" },
+            { word: "百發百中", hint: "好似用弓箭射中靶心咁準！" }, { word: "千變萬化", hint: "呢個地圖好神祕，成日變！" },
+            { word: "馬到功成", hint: "馬仔祝你一試就成功！" }, { word: "亡羊補牢", hint: "羊仔走咗？快啲整返好個欄啦！" },
+            { word: "龍飛鳳舞", hint: "啲字寫得好靚，好似龍喺度飛！" }, { word: "虎頭蛇尾", hint: "救動物要救到底，唔好半途而廢！" },
+            { word: "狐假虎威", hint: "小狐狸想扮老虎去嚇人！" }, { word: "狼吞虎嚥", hint: "餓咗好耐嘅狼仔喺度大口食嘢！" },
+            { word: "雞飛狗跳", hint: "農場發生咗咩事？咁嘈嘅！" }, { word: "井底之蛙", hint: "青蛙仔想跳出個井睇世界！" },
+            { word: "守株待兔", hint: "兔仔唔會自己撞埋嚟㗎，快啲救佢！" }, { word: "畫龍點睛", hint: "最後一筆寫啱，龍就飛出嚟！" },
+            { word: "風和日麗", hint: "今日天氣好好，最啱去探險！" }, { word: "陽光燦爛", hint: "太陽伯伯出咗嚟，唔驚 Creeper 喇！" },
+            { word: "春暖花開", hint: "春天到咗，花園啲花開晒喇！" }, { word: "烈日當空", hint: "好熱呀，快啲救牛牛去陰涼處！" },
+            { word: "秋高氣爽", hint: "秋天嘅風吹得好舒服。" }, { word: "冰天雪地", hint: "雪地好凍，快啲幫狼仔保暖！" },
+            { word: "山青水秀", hint: "呢個世界嘅山水真係靚！" }, { word: "風平浪靜", hint: "大海好平靜，坐船去救人啦！" },
+            { word: "眉清目秀", hint: "呢個人望落好精神喎！" }, { word: "衣冠楚楚", hint: "著得好整齊，好似要去參加聚會。" },
+            { word: "垂頭喪氣", hint: "唔好唔開心，再試一次就救到！" }, { word: "目瞪口呆", hint: "見到 Enderman 嚇到呆咗！" },
+            { word: "捧腹大笑", hint: "豬仔跳舞令到大家好開心！" }, { word: "口若懸河", hint: "講嘢好流利，停唔到口！" },
+            { word: "廢寢忘食", hint: "專心到唔記得食飯同瞓覺！" }, { word: "聚精會神", hint: "對眼望實個螢幕，專心救動物！" },
+            { word: "自言自語", hint: "狗狗喺度細聲同自己講嘢。" }, { word: "大公無私", hint: "貓貓想大家公平分配魚魚！" },
+            { word: "捨己為人", hint: "勇敢嘅 Steve 走去救大家！" }, { word: "知錯能改", hint: "寫錯咗唔緊要，改返就係好細路！" },
+            { word: "半途而廢", hint: "唔好玩到一半就走咗去呀！" }, { word: "全力以赴", hint: "用晒所有力氣去完成每日任務！" },
+            { word: "名列前茅", hint: "考試考得好，排喺好前面！" }, { word: "名副其實", hint: "真係好似傳聞中咁勁！" },
+            { word: "拔苗助長", hint: "唔好急，禾苗要慢慢大㗎。" }, { word: "水落石出", hint: "真相終於出現喇！" },
+            { word: "出口成章", hint: "一開口就講到好靚嘅句子。" }, { word: "助人為樂", hint: "幫到人，自己都開心啲！" },
+            { word: "耳目一新", hint: "換咗新 Skin，成個人唔同晒！" }, { word: "見義勇為", hint: "見到有動物被困，即刻衝去救！" },
+            { word: "光陰似箭", hint: "時間過得好快，要珍惜呀！" }, { word: "名山大川", hint: "去旅行睇下世界各地嘅名山。" },
+            { word: "因材施教", hint: "每個人學嘢嘅方法都唔同。" }, { word: "多才多藝", hint: "Jovan 又識彈琴又識寫 Code！" },
+            { word: "如魚得水", hint: "去到鍾意嘅環境，好自在！" }, { word: "安分守己", hint: "乖乖地守規矩。" },
+            { word: "自強不息", hint: "每日都要努力進步！" }, { word: "汗流浹背", hint: "做完運動，成身都係汗。" },
+            { word: "妙手回春", hint: "好似醫生咁醫返好受傷嘅豬仔。" }, { word: "志同道合", hint: "搵到一班好朋友一齊玩 Minecraft！" },
+            { word: "改邪歸正", hint: "怪獸都想變返好人。" }, { word: "取長補短", hint: "學下人哋嘅優點。" },
+            { word: "依依不捨", hint: "要收機喇，真係唔捨得。" }, { word: "物美價廉", hint: "喺英國超市買到又平又好嘅嘢。" },
+            { word: "苦盡甘來", hint: "辛苦完，終於有收穫！" }, { word: "美不勝收", hint: "風景靚到睇唔晒。" },
+            { word: "面紅耳赤", hint: "唔好爭吵，講到面都紅晒。" }, { word: "洗心革面", hint: "決定重新做一個好人。" },
+            { word: "津津有味", hint: "食得好開心，好好味！" }, { word: "流連忘返", hint: "呢個公園太好玩，唔想返屋企。" },
+            { word: "胸有成竹", hint: "好有信心可以救到動物！" }, { word: "財源廣進", hint: "祝大家賺多啲錢買鑽石！" },
+            { word: "情深義重", hint: "大家嘅友誼好深厚。" }, { word: "得意忘形", hint: "唔好開心過頭，小心跌親！" },
+            { word: "深思熟慮", hint: "諗清楚先至行動。" }, { word: "貪小便宜", hint: "唔好因為少少嘢而貪心。" },
+            { word: "悶悶不樂", hint: "今日點解唔開心呀？講畀我聽。" }, { word: "揚眉吐氣", hint: "終於贏咗，真係好開心！" },
+            { word: "朝氣蓬勃", hint: "每日起身都充滿活力！" }, { word: "循序漸進", hint: "一步一步慢慢學，唔使急。" },
+            { word: "微不足道", hint: "呢啲只係好小嘅事。" }, { word: "意氣風發", hint: "贏咗比賽，好威風！" },
+            { word: "愛不釋手", hint: "呢個 Minecraft 玩具真係好鍾意。" }, { word: "落荒而逃", hint: "見到 Creeper 就要快啲走！" },
+            { word: "對牛彈琴", hint: "同唔明嘅人講道理，冇用㗎。" }, { word: "實事求是", hint: "要做返啲真正有意義嘅事。" },
+            { word: "精益求精", hint: "已經做得好好，想再做好啲！" }, { word: "聚沙成塔", hint: "慢慢儲，就可以變出大城堡。" },
+            { word: "學無止境", hint: "學嘢係一世嘅事。" }, { word: "機智勇敢", hint: "又聰明又勇敢去挑戰難關。" },
+            { word: "舉一反三", hint: "學一件事，就可以諗到三件事！" }, { word: "謙虛好學", hint: "唔自大，又鍾意學新嘢。" },
+            { word: "豁然開朗", hint: "突然之間明白晒所有嘢！" }, { word: "讀萬卷書", hint: "要讀多啲書，好似行咗萬里路。" },
+            { word: "鐵石心腸", hint: "唔好咁硬心腸，快啲救動物！" }, { word: "歡天喜地", hint: "大家一齊去慶祝囉！" },
+            { word: "驚天動地", hint: "發生咗一件好震撼嘅事！" }, { word: "顯而易見", hint: "一睇就明白，好清楚。" }
+        ];
+
+        const animalIcons = ["🐷", "🐑", "🐮", "🐔", "🐱", "🐶", "🦊", "🐰", "🐼", "🐨", "🐸", "🐵"];
+        let currentIdiom = "", userAns = [], savedAnimals = [], idiomsSolvedInSession = 0, currentAnimal = "";
+
+        function initHero() {
+            const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+            const globalXp = localStorage.getItem('jovan_total_xp') || 0;
+            document.getElementById('hero-name').innerText = name;
+            document.getElementById('global-total-xp').innerText = globalXp;
+        }
+
+        async function addGlobalXP(amount) {
+            let currentXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
+            let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+            currentXP += amount;
+            localStorage.setItem('jovan_total_xp', currentXP);
+            document.getElementById('global-total-xp').innerText = currentXP;
+
+            const msg = document.createElement('div');
+            msg.innerText = `+${amount} XP!`;
+            msg.style = "position:fixed; top:40%; left:50%; transform:translateX(-50%); font-size:4em; color:#55FF55; text-shadow:3px 3px #000; z-index:9999; pointer-events:none; animation: fadeUp 1.5s forwards;";
+            document.body.appendChild(msg);
+            setTimeout(() => msg.remove(), 1500);
+
+            try {
+                await setDoc(doc(db, "leaderboard", heroName), {
+                    name: heroName,
+                    xp: currentXP,
+                    lastUpdate: new Date()
+                }, { merge: true });
+            } catch (e) { console.error("Cloud Sync Failed:", e); }
+        }
+
+        function initRescueSession() {
+            initHero();
+            idiomsSolvedInSession = 0;
+            currentAnimal = animalIcons[Math.floor(Math.random() * animalIcons.length)];
+            document.getElementById('animal').innerText = currentAnimal;
+            document.getElementById('rescue-scene').classList.remove('unlocked');
+            document.getElementById('finishRescueBtn').style.display = 'none';
+            const bars = document.querySelectorAll('.bar');
+            bars.forEach(b => b.classList.remove('removed'));
+            startNewIdiomInRescue();
+        }
+
+        function startNewIdiomInRescue() {
+            const data = idiomDB[Math.floor(Math.random() * idiomDB.length)];
+            currentIdiom = data.word;
+            userAns = [];
+            document.getElementById('message').innerText = `第 ${idiomsSolvedInSession + 1}/4 關：${data.hint}`;
+            document.getElementById('nextQuestBtn').style.display = 'none';
+            const shuffled = currentIdiom.split('').sort(() => Math.random() - 0.5);
+            const cardsDiv = document.getElementById('cards');
+            cardsDiv.innerHTML = shuffled.map((char, i) => `<div class="word-card" id="card-${i}" onclick="placeWord('${char}', ${i})">${char}</div>`).join('');
+            updateUI();
+        }
+
+        function placeWord(char, cardIdx) {
+            let nextSlot = userAns.length;
+            if (nextSlot < 4) {
+                if (char === currentIdiom[nextSlot]) {
+                    userAns.push(char);
+                    document.getElementById(`card-${cardIdx}`).classList.add('used');
+                    updateUI();
+                    if (userAns.length === 4) idiomCorrect();
+                } else {
+                    document.getElementById('message').innerText = "搵錯字喇，聽多次讀音再試下？";
+                    const slot = document.getElementById(`slot-${nextSlot}`);
+                    slot.style.background = "rgba(231, 76, 60, 0.5)";
+                    setTimeout(() => slot.style.background = "rgba(0,0,0,0.6)", 300);
+                }
+            }
+        }
+
+        function updateUI() {
+            for (let i = 0; i < 4; i++) {
+                const slot = document.getElementById(`slot-${i}`);
+                slot.innerText = userAns[i] || "";
+                slot.classList.toggle('correct-slot', !!userAns[i]);
+            }
+        }
+
+        function resetSlots() {
+            userAns = [];
+            document.querySelectorAll('.word-card').forEach(c => c.classList.remove('used'));
+            updateUI();
+        }
+
+        function idiomCorrect() {
+            const bars = document.querySelectorAll('.bar');
+            bars[idiomsSolvedInSession].classList.add('removed');
+            idiomsSolvedInSession++;
+            addGlobalXP(2); // 答啱一題 +2XP
+            speakIdiom();
+            if (idiomsSolvedInSession === 4) rescueSuccess();
+            else {
+                document.getElementById('message').innerText = `好嘢！開咗第 ${idiomsSolvedInSession} 條柱喇！`;
+                document.getElementById('nextQuestBtn').style.display = 'inline-block';
+            }
+        }
+
+        function rescueSuccess() {
+            document.getElementById('rescue-scene').classList.add('unlocked');
+            document.getElementById('message').innerText = "💎 成功救出動物！太犀利喇！ 💎";
+            document.getElementById('finishRescueBtn').style.display = 'inline-block';
+            savedAnimals.push(currentAnimal);
+            updateCollection();
+            document.getElementById('xp-bar').style.width = "100%";
+            setTimeout(() => { document.getElementById('xp-bar').style.width = "0%"; }, 2000);
+        }
+
+        function updateCollection() {
+            const shelf = document.getElementById('collection-shelf');
+            shelf.innerHTML = savedAnimals.map(a => `<div class="collected-animal">${a}</div>`).join('');
+            document.getElementById('saveCount').innerText = savedAnimals.length;
+        }
+
+        function speakIdiom() {
+            const m = new SpeechSynthesisUtterance(currentIdiom);
+            m.lang = 'zh-HK'; m.rate = 0.7; window.speechSynthesis.speak(m);
+        }
+
+        window.placeWord = placeWord;
+        window.resetSlots = resetSlots;
+        window.startNewIdiomInRescue = startNewIdiomInRescue;
+        window.initRescueSession = initRescueSession;
+        window.speakIdiom = speakIdiom;
+        window.onload = initRescueSession;
+    </script>
+</body>
+</html>

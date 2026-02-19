@@ -1,0 +1,135 @@
+<script type="module">
+        // 1. 引入 Firebase 設定
+        import { db, doc, setDoc } from './firebase-config.js';
+
+        const p1Bank = [
+            {q:"Play / Pot", a:"ay"}, {q:"Tree / Ten", a:"ee"}, {q:"Night / Net", a:"igh"},
+            {q:"Snow / Sun", a:"ow"}, {q:"Moon / Man", a:"oo"}, {q:"Book / Bat", a:"oo"},
+            {q:"Star / Sit", a:"ar"}, {q:"Fork / Fan", a:"or"}, {q:"Chair / Cup", a:"air"},
+            {q:"Girl / Get", a:"ir"}, {q:"Shout / Ship", a:"ou"}, {q:"Toy / Ten", a:"oy"},
+            {q:"Fair / Fun", a:"air"}, {q:"Light / Leg", a:"igh"}, {q:"Green / Get", a:"ee"},
+            {q:"Rain / Run", a:"ai"}, {q:"Boat / Big", a:"oa"}, {q:"Coin / Cat", a:"oi"},
+            {q:"Cow / Cup", a:"ow"}, {q:"Bird / Bus", a:"ir"}
+        ];
+
+        const p2Bank = [
+            {l:"Stay", r:"Day"}, {l:"Sleep", r:"Green"}, {l:"Bright", r:"Light"},
+            {l:"Show", r:"Blow"}, {l:"Spoon", r:"Soon"}, {l:"Cook", r:"Look"},
+            {l:"Car", r:"Far"}, {l:"Short", r:"Sport"}, {l:"Stair", r:"Pair"},
+            {l:"Bird", r:"Stir"}, {l:"Chain", r:"Train"}, {l:"Blue", r:"Glue"}
+        ];
+
+        const p3Bank = ["ay", "ee", "igh", "ow", "oo", "ar", "or", "air", "ir", "ou", "oi", "oa", "ai", "ur", "er"];
+
+        let currentP1 = [], currentP2 = [], currentP3 = [];
+
+        function shuffle(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function initHero() {
+            const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+            const xp = localStorage.getItem('jovan_total_xp') || 0;
+            document.getElementById('hero-name').innerText = name;
+            document.getElementById('display-xp').innerText = xp;
+        }
+
+        // 2. 升級版 addXP (會同步去 Firebase)
+        async function addXP(amount) {
+            let currentXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
+            let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+            
+            currentXP += amount;
+            localStorage.setItem('jovan_total_xp', currentXP);
+            document.getElementById('display-xp').innerText = currentXP;
+
+            // 彈出 XP 字樣動畫
+            const msg = document.createElement('div');
+            msg.innerText = `+${amount} XP!`;
+            msg.style = "position:fixed; top:50%; left:50%; transform:translateX(-50%); font-size:4em; color:#55FF55; text-shadow:3px 3px #000; z-index:9999; pointer-events:none; animation: fadeUp 1.5s forwards;";
+            document.body.appendChild(msg);
+            setTimeout(() => msg.remove(), 1500);
+
+            // --- Firebase 雲端同步 ---
+            try {
+                await setDoc(doc(db, "leaderboard", heroName), {
+                    name: heroName,
+                    xp: currentXP,
+                    lastUpdate: new Date()
+                }, { merge: true });
+                console.log("Cloud Sync Success!");
+            } catch (e) {
+                console.error("Cloud Sync Failed: ", e);
+            }
+        }
+
+        function init() {
+            initHero();
+            currentP1 = shuffle(p1Bank).slice(0, 15);
+            document.getElementById('quizGrid').innerHTML = currentP1.map((d, i) => `
+                <div class="item"><span>${i+1}. ${d.q}</span><input type="text" id="p1ans${i}"></div>
+            `).join('');
+
+            let selectedP2 = shuffle(p2Bank).slice(0, 10);
+            let rightSide = selectedP2.map((d, i) => ({ text: d.r, originalIndex: i }));
+            let shuffledRight = shuffle(rightSide);
+            const alphabet = "ABCDEFGHIJ";
+            currentP2 = selectedP2.map((d, i) => {
+                const correctLetter = alphabet[shuffledRight.findIndex(r => r.originalIndex === i)];
+                return { left: d.l, correctAns: correctLetter };
+            });
+            document.getElementById('rhymeLeft').innerHTML = selectedP2.map((d, i) => `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    ${i+1}. ${d.l} <input type="text" id="p2ans${i}" style="width:45px;" maxlength="1">
+                </div>
+            `).join('');
+            document.getElementById('rhymeRight').innerHTML = shuffledRight.map((d, i) => `<div>${alphabet[i]}. ${d.text}</div>`).join('');
+
+            currentP3 = shuffle(p3Bank).slice(0, 10);
+            document.getElementById('spellingGrid').innerHTML = currentP3.map((s, i) => `
+                <div class="item"><span><b>${s}</b></span><input type="text" id="p3ans${i}" style="width:130px;" placeholder="Type word"></div>
+            `).join('');
+        }
+
+        function calculateTotal() {
+            let score = 0;
+            currentP1.forEach((d, i) => { const el = document.getElementById(`p1ans${i}`); if(el.value.toLowerCase().trim() === d.a) { el.className = 'correct'; score++; } else { el.className = 'wrong'; } });
+            currentP2.forEach((d, i) => { const el = document.getElementById(`p2ans${i}`); if(el.value.toUpperCase().trim() === d.correctAns) { el.className = 'correct'; score++; } else { el.className = 'wrong'; } });
+            currentP3.forEach((s, i) => { const el = document.getElementById(`p3ans${i}`); const val = el.value.toLowerCase().trim(); if(val.length > 0 && val.includes(s)) { el.className = 'correct'; score++; } else { el.className = 'wrong'; } });
+
+            const result = document.getElementById('result-box');
+            result.style.display = 'block';
+            result.innerHTML = `Your Score: ${score} / 35`;
+            
+            if (score === 35) { 
+                result.innerHTML += "<br>💎 PERFECT! YOU ARE A PHONICS HERO! 💎"; 
+                spawnDiamonds(); 
+                addXP(30); 
+            }
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function spawnDiamonds() {
+            const symbols = ['💎', '✨', '⭐', '🟩'];
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const d = document.createElement('div');
+                    d.className = 'diamond'; d.innerHTML = symbols[Math.floor(Math.random() * symbols.length)];
+                    d.style.left = Math.random() * 100 + 'vw'; d.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    document.body.appendChild(d); setTimeout(() => d.remove(), 4000);
+                }, i * 100);
+            }
+        }
+
+        // 3. 關鍵：將 Function 曝露畀 window，否則 HTML 嘅 onclick 會搵唔到
+        window.calculateTotal = calculateTotal;
+        window.onload = init;
+
+    </script>
+</body>
+</html>
