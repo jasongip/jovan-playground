@@ -39,12 +39,30 @@
         #result-box { text-align: center; font-size: 2.2em; font-weight: bold; color: #e67e22; padding: 20px; display: none; }
         .diamond { position: fixed; top: -50px; font-size: 30px; z-index: 9999; pointer-events: none; animation: fall linear forwards; }
         @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+    /* RPG 英雄狀態欄樣式 (標準套裝) */
+        #hero-status {
+            background: #3d2b1f; border: 4px solid #1a120c; border-radius: 15px;
+            max-width: 600px; margin: 0 auto 20px; padding: 15px; text-align: center;
+            color: #fff; box-shadow: 0 6px 0 #000;
+        }
+        #hero-name { color: #FFFF55; font-size: 1.8em; text-shadow: 2px 2px #000; margin-bottom: 5px; }
+        .display-xp-text { color: #55FF55; font-size: 1.4em; }
+        
+        /* XP 獲得動畫 */
+        @keyframes fadeUp {
+            0% { transform: translate(-50%, 0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(-50%, -100px); opacity: 0; }
+        }
     </style>
 </head>
 <body>
 
     <h1>🌟 Phonics Hero: Final Boss 🌟</h1>
-
+        <div id="hero-status">
+            <div id="hero-name">Loading Explorer...</div>
+            <div class="display-xp-text">TOTAL XP: <span id="display-xp">0</span></div>
+        </div>
     <div class="section">
         <h2>Part 1: Sound Detective</h2>
         <div class="instruction">
@@ -81,98 +99,153 @@
     </div>
 
     <div id="result-box"></div>
+        
+<script type="module">
+    // 1. 引入 Firebase
+    import { db, doc, setDoc } from './firebase-config.js';
 
-    <script>
-        // 題庫數據
-        const p1Bank = [
-            {q:"Play / Pot", a:"ay"}, {q:"Tree / Ten", a:"ee"}, {q:"Night / Net", a:"igh"},
-            {q:"Snow / Sun", a:"ow"}, {q:"Moon / Man", a:"oo"}, {q:"Book / Bat", a:"oo"},
-            {q:"Star / Sit", a:"ar"}, {q:"Fork / Fan", a:"or"}, {q:"Chair / Cup", a:"air"},
-            {q:"Girl / Get", a:"ir"}, {q:"Shout / Ship", a:"ou"}, {q:"Toy / Ten", a:"oy"},
-            {q:"Fair / Fun", a:"air"}, {q:"Light / Leg", a:"igh"}, {q:"Green / Get", a:"ee"},
-            {q:"Rain / Run", a:"ai"}, {q:"Boat / Big", a:"oa"}, {q:"Coin / Cat", a:"oi"},
-            {q:"Cow / Cup", a:"ow"}, {q:"Bird / Bus", a:"ir"}
-        ];
+    // 題庫數據
+    const p1Bank = [
+        {q:"Play / Pot", a:"ay"}, {q:"Tree / Ten", a:"ee"}, {q:"Night / Net", a:"igh"},
+        {q:"Snow / Sun", a:"ow"}, {q:"Moon / Man", a:"oo"}, {q:"Book / Bat", a:"oo"},
+        {q:"Star / Sit", a:"ar"}, {q:"Fork / Fan", a:"or"}, {q:"Chair / Cup", a:"air"},
+        {q:"Girl / Get", a:"ir"}, {q:"Shout / Ship", a:"ou"}, {q:"Toy / Ten", a:"oy"},
+        {q:"Fair / Fun", a:"air"}, {q:"Light / Leg", a:"igh"}, {q:"Green / Get", a:"ee"},
+        {q:"Rain / Run", a:"ai"}, {q:"Boat / Big", a:"oa"}, {q:"Coin / Cat", a:"oi"},
+        {q:"Cow / Cup", a:"ow"}, {q:"Bird / Bus", a:"ir"}
+    ];
 
-        const p2Bank = [
-            {l:"Stay", r:"Day"}, {l:"Sleep", r:"Green"}, {l:"Bright", r:"Light"},
-            {l:"Show", r:"Blow"}, {l:"Spoon", r:"Soon"}, {l:"Cook", r:"Look"},
-            {l:"Car", r:"Far"}, {l:"Short", r:"Sport"}, {l:"Stair", r:"Pair"},
-            {l:"Bird", r:"Stir"}, {l:"Chain", r:"Train"}, {l:"Blue", r:"Glue"}
-        ];
+    const p2Bank = [
+        {l:"Stay", r:"Day"}, {l:"Sleep", r:"Green"}, {l:"Bright", r:"Light"},
+        {l:"Show", r:"Blow"}, {l:"Spoon", r:"Soon"}, {l:"Cook", r:"Look"},
+        {l:"Car", r:"Far"}, {l:"Short", r:"Sport"}, {l:"Stair", r:"Pair"},
+        {l:"Bird", r:"Stir"}, {l:"Chain", r:"Train"}, {l:"Blue", r:"Glue"}
+    ];
 
-        const p3Bank = ["ay", "ee", "igh", "ow", "oo", "ar", "or", "air", "ir", "ou", "oi", "oa", "ai", "ur", "er"];
+    const p3Bank = ["ay", "ee", "igh", "ow", "oo", "ar", "or", "air", "ir", "ou", "oi", "oa", "ai", "ur", "er"];
 
-        let currentP1 = [], currentP2 = [], currentP3 = [];
+    let currentP1 = [], currentP2 = [], currentP3 = [];
+    let isXpAwarded = false; // 用嚟標記呢場係咪已經攞咗獎
+    
+    // --- 防禦機制：檢查 ID 是否存在才更新 ---
+    function safeUpdateText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.innerText = text;
+    }
 
-        // 修正後的洗牌函數 [已經捉到 Bug!]
-        function shuffle(array) {
-            let arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
+    // 2. 初始化英雄資料
+    function initHero() {
+        const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+        const xp = localStorage.getItem('jovan_total_xp') || 0;
+        safeUpdateText('hero-name', name);
+        safeUpdateText('display-xp', xp);
+    }
+
+    // 3. 雲端加分邏輯 (Firebase Sync)
+    async function addXP(amount) {
+        let currentXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
+        let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+        
+        currentXP += amount;
+        localStorage.setItem('jovan_total_xp', currentXP);
+        safeUpdateText('display-xp', currentXP);
+
+        const msg = document.createElement('div');
+        msg.innerText = `+${amount} XP!`;
+        msg.style = "position:fixed; top:40%; left:50%; transform:translateX(-50%); font-size:4em; color:#55FF55; text-shadow:3px 3px #000; z-index:9999; pointer-events:none; animation: fadeUp 1.5s forwards;";
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 1500);
+
+        try {
+            await setDoc(doc(db, "leaderboard", heroName), {
+                name: heroName,
+                xp: currentXP,
+                lastUpdate: new Date()
+            }, { merge: true });
+            console.log("Phonics Cloud Sync Success!");
+        } catch (e) { console.error("Cloud Sync Error:", e); }
+    }
+
+    // 4. 掛載功能到 window
+    window.calculateTotal = function() {
+    let score = 0;
+    currentP1.forEach((d, i) => { const el = document.getElementById(`p1ans${i}`); if(el && el.value.toLowerCase().trim() === d.a) { el.className = 'correct'; score++; } else if(el) { el.className = 'wrong'; } });
+    currentP2.forEach((d, i) => { const el = document.getElementById(`p2ans${i}`); if(el && el.value.toUpperCase().trim() === d.correctAns) { el.className = 'correct'; score++; } else if(el) { el.className = 'wrong'; } });
+    currentP3.forEach((s, i) => { const el = document.getElementById(`p3ans${i}`); const val = el ? el.value.toLowerCase().trim() : ""; if(val.length > 0 && val.includes(s)) { el.className = 'correct'; score++; } else if(el) { el.className = 'wrong'; } });
+
+    const result = document.getElementById('result-box');
+    if(result) {
+        result.style.display = 'block';
+        result.innerHTML = `Your Score: ${score} / 35`;
+        
+        // 只有滿分 35 且「未攞過獎」先會加分同落鑽石
+        if (score === 35) { 
+            if (!isXpAwarded) {
+                result.innerHTML += "<br>💎 PERFECT! YOU ARE A PHONICS HERO! 💎"; 
+                spawnDiamonds(); 
+                addXP(30); // 領獎
+                isXpAwarded = true; // 領完之後鎖死，防止重複撳掣攞分
+            } else {
+                result.innerHTML += "<br>💎 (Reward already claimed for this quest) 💎";
             }
-            return arr;
         }
+    }
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    };
 
-        function init() {
-            // Part 1: 隨機 15 題
-            currentP1 = shuffle(p1Bank).slice(0, 15);
-            document.getElementById('quizGrid').innerHTML = currentP1.map((d, i) => `
-                <div class="item"><span>${i+1}. ${d.q}</span><input type="text" id="p1ans${i}"></div>
-            `).join('');
-
-            // Part 2: 隨機 10 對並打亂字母
-            let selectedP2 = shuffle(p2Bank).slice(0, 10);
-            let rightSide = selectedP2.map((d, i) => ({ text: d.r, originalIndex: i }));
-            let shuffledRight = shuffle(rightSide);
-            
-            const alphabet = "ABCDEFGHIJ";
-            currentP2 = selectedP2.map((d, i) => {
-                const correctLetter = alphabet[shuffledRight.findIndex(r => r.originalIndex === i)];
-                return { left: d.left, correctAns: correctLetter };
-            });
-
-            document.getElementById('rhymeLeft').innerHTML = selectedP2.map((d, i) => `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    ${i+1}. ${d.l} <input type="text" id="p2ans${i}" style="width:45px;" maxlength="1">
-                </div>
-            `).join('');
-            document.getElementById('rhymeRight').innerHTML = shuffledRight.map((d, i) => `<div>${alphabet[i]}. ${d.text}</div>`).join('');
-
-            // Part 3: 隨機 10 個
-            currentP3 = shuffle(p3Bank).slice(0, 10);
-            document.getElementById('spellingGrid').innerHTML = currentP3.map((s, i) => `
-                <div class="item"><span><b>${s}</b></span><input type="text" id="p3ans${i}" style="width:130px;" placeholder="Type word"></div>
-            `).join('');
+    function shuffle(array) {
+        let arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
         }
+        return arr;
+    }
 
-        function calculateTotal() {
-            let score = 0;
-            currentP1.forEach((d, i) => { const el = document.getElementById(`p1ans${i}`); if(el.value.toLowerCase().trim() === d.a) { el.className = 'correct'; score++; } else { el.className = 'wrong'; } });
-            currentP2.forEach((d, i) => { const el = document.getElementById(`p2ans${i}`); if(el.value.toUpperCase().trim() === d.correctAns) { el.className = 'correct'; score++; } else { el.className = 'wrong'; } });
-            currentP3.forEach((s, i) => { const el = document.getElementById(`p3ans${i}`); const val = el.value.toLowerCase().trim(); if(val.length > 0 && val.includes(s)) { el.className = 'correct'; score++; } else { el.className = 'wrong'; } });
+    function init() {
+        initHero();
+        // Part 1
+        currentP1 = shuffle(p1Bank).slice(0, 15);
+        document.getElementById('quizGrid').innerHTML = currentP1.map((d, i) => `
+            <div class="item"><span>${i+1}. ${d.q}</span><input type="text" id="p1ans${i}"></div>
+        `).join('');
 
-            const result = document.getElementById('result-box');
-            result.style.display = 'block';
-            result.innerHTML = `Your Score: ${score} / 35`;
-            if (score === 35) { result.innerHTML += "<br>💎 PERFECT! YOU ARE A PHONICS HERO! 💎"; spawnDiamonds(); }
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        // Part 2
+        let selectedP2 = shuffle(p2Bank).slice(0, 10);
+        let rightSide = selectedP2.map((d, i) => ({ text: d.r, originalIndex: i }));
+        let shuffledRight = shuffle(rightSide);
+        const alphabet = "ABCDEFGHIJ";
+        currentP2 = selectedP2.map((d, i) => {
+            const correctLetter = alphabet[shuffledRight.findIndex(r => r.originalIndex === i)];
+            return { left: d.l, correctAns: correctLetter };
+        });
+        document.getElementById('rhymeLeft').innerHTML = selectedP2.map((d, i) => `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                ${i+1}. ${d.l} <input type="text" id="p2ans${i}" style="width:45px;" maxlength="1">
+            </div>
+        `).join('');
+        document.getElementById('rhymeRight').innerHTML = shuffledRight.map((d, i) => `<div>${alphabet[i]}. ${d.text}</div>`).join('');
+
+        // Part 3
+        currentP3 = shuffle(p3Bank).slice(0, 10);
+        document.getElementById('spellingGrid').innerHTML = currentP3.map((s, i) => `
+            <div class="item"><span><b>${s}</b></span><input type="text" id="p3ans${i}" style="width:130px;" placeholder="Type word"></div>
+        `).join('');
+    }
+
+    function spawnDiamonds() {
+        const symbols = ['💎', '✨', '⭐', '🟩'];
+        for (let i = 0; i < 50; i++) {
+            setTimeout(() => {
+                const d = document.createElement('div');
+                d.className = 'diamond'; d.innerHTML = symbols[Math.floor(Math.random() * symbols.length)];
+                d.style.left = Math.random() * 100 + 'vw'; d.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                document.body.appendChild(d); setTimeout(() => d.remove(), 4000);
+            }, i * 100);
         }
+    }
 
-        function spawnDiamonds() {
-            const symbols = ['💎', '✨', '⭐', '🟩'];
-            for (let i = 0; i < 50; i++) {
-                setTimeout(() => {
-                    const d = document.createElement('div');
-                    d.className = 'diamond'; d.innerHTML = symbols[Math.floor(Math.random() * symbols.length)];
-                    d.style.left = Math.random() * 100 + 'vw'; d.style.animationDuration = (Math.random() * 2 + 2) + 's';
-                    document.body.appendChild(d); setTimeout(() => d.remove(), 4000);
-                }, i * 100);
-            }
-        }
-
-        window.onload = init;
-    </script>
+    window.onload = init;
+</script>
 </body>
 </html>
