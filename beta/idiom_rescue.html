@@ -170,39 +170,41 @@
         const animalIcons = ["🐷", "🐑", "🐮", "🐔", "🐱", "🐶", "🦊", "🐰", "🐼", "🐨", "🐸", "🐵"];
         let currentIdiom = "", userAns = [], savedAnimals = [], idiomsSolvedInSession = 0, currentAnimal = "";
 
-        // 防禦機制
+        // 防禦機制let currentIdiom = "", userAns = [], savedAnimals = [], idiomsSolvedInSession = 0, currentAnimal = "";
+        let isCurrentIdiomLocked = false; // 呢關攞咗分就變 true，鎖死重試同擺字
+    
         function safeUpdateText(id, text) {
             const el = document.getElementById(id);
             if (el) el.innerText = text;
         }
-
+    
         function initHero() {
             const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
             const globalXp = localStorage.getItem('jovan_total_xp') || 0;
             safeUpdateText('hero-name', name);
             safeUpdateText('display-xp', globalXp);
         }
-
+    
         async function addGlobalXP(amount) {
             let currentXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
             let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
             currentXP += amount;
             localStorage.setItem('jovan_total_xp', currentXP);
             safeUpdateText('display-xp', currentXP);
-
+    
             const msg = document.createElement('div');
             msg.innerText = `+${amount} XP!`;
             msg.style = "position:fixed; top:40%; left:50%; transform:translateX(-50%); font-size:4em; color:#55FF55; text-shadow:3px 3px #000; z-index:9999; pointer-events:none; animation: fadeUp 1.5s forwards;";
             document.body.appendChild(msg);
             setTimeout(() => msg.remove(), 1500);
-
+    
             try {
                 await setDoc(doc(db, "leaderboard", heroName), {
                     name: heroName, xp: currentXP, lastUpdate: new Date()
                 }, { merge: true });
             } catch (e) { console.error("Cloud Sync Failed:", e); }
         }
-
+    
         window.initRescueSession = function() {
             initHero();
             idiomsSolvedInSession = 0;
@@ -210,24 +212,33 @@
             document.getElementById('animal').innerText = currentAnimal;
             document.getElementById('rescue-scene').classList.remove('unlocked');
             document.getElementById('finishRescueBtn').style.display = 'none';
+            
+            const resetBtn = document.querySelector('button[onclick="resetSlots()"]');
+            if(resetBtn) resetBtn.style.display = 'inline-block';
+    
             const bars = document.querySelectorAll('.bar');
             bars.forEach(b => b.classList.remove('removed'));
             startNewIdiomInRescue();
         }
-
+    
         window.startNewIdiomInRescue = function() {
+            isCurrentIdiomLocked = false; // 進入新題目，解鎖
             const data = idiomDB[Math.floor(Math.random() * idiomDB.length)];
             currentIdiom = data.word;
             userAns = [];
             safeUpdateText('message', `第 ${idiomsSolvedInSession + 1}/4 關：${data.hint}`);
             document.getElementById('nextQuestBtn').style.display = 'none';
+            
             const shuffled = currentIdiom.split('').sort(() => Math.random() - 0.5);
             const cardsDiv = document.getElementById('cards');
             cardsDiv.innerHTML = shuffled.map((char, i) => `<div class="word-card" id="card-${i}" onclick="placeWord('${char}', ${i})">${char}</div>`).join('');
             updateUI();
         }
-
+    
         window.placeWord = function(char, cardIdx) {
+            // 如果呢題已經攞咗分，唔准再擺字
+            if (isCurrentIdiomLocked) return;
+    
             let nextSlot = userAns.length;
             if (nextSlot < 4) {
                 if (char === currentIdiom[nextSlot]) {
@@ -245,7 +256,54 @@
                 }
             }
         }
-
+    
+        window.resetSlots = function() {
+            // 如果已經攞咗分，鎖死重試功能
+            if (isCurrentIdiomLocked) {
+                safeUpdateText('message', "呢關已經過咗，請撳「下一關」！");
+                return;
+            }
+            userAns = [];
+            document.querySelectorAll('.word-card').forEach(c => c.classList.remove('used'));
+            updateUI();
+            safeUpdateText('message', "重試呢一關，加油！");
+        }
+    
+        function idiomCorrect() {
+            isCurrentIdiomLocked = true; // 攞分即鎖：即刻封印擺字同重試
+            
+            const bars = document.querySelectorAll('.bar');
+            if(bars[idiomsSolvedInSession]) bars[idiomsSolvedInSession].classList.add('removed');
+            
+            idiomsSolvedInSession++;
+            addGlobalXP(2); // 攞 2 分
+            speakIdiom();
+            
+            if (idiomsSolvedInSession === 4) {
+                rescueSuccess();
+            } else {
+                safeUpdateText('message', "答啱喇！攞到 2 XP！撳「下一關」救埋剩低嘅柱！");
+                document.getElementById('nextQuestBtn').style.display = 'inline-block';
+            }
+        }
+    
+        function rescueSuccess() {
+            document.getElementById('rescue-scene').classList.add('unlocked');
+            safeUpdateText('message', "💎 英雄！動物已經被你救出嚟喇！ 💎");
+            document.getElementById('finishRescueBtn').style.display = 'inline-block';
+            document.getElementById('nextQuestBtn').style.display = 'none';
+    
+            // 救晒之後，徹底隱藏重試掣
+            const resetBtn = document.querySelector('button[onclick="resetSlots()"]');
+            if(resetBtn) resetBtn.style.display = 'none';
+    
+            savedAnimals.push(currentAnimal);
+            updateCollection();
+            const bar = document.getElementById('xp-bar');
+            if(bar) bar.style.width = "100%";
+            setTimeout(() => { if(bar) bar.style.width = "0%"; }, 2000);
+        }
+    
         function updateUI() {
             for (let i = 0; i < 4; i++) {
                 const slot = document.getElementById(`slot-${i}`);
@@ -255,48 +313,20 @@
                 }
             }
         }
-
-        window.resetSlots = function() {
-            userAns = [];
-            document.querySelectorAll('.word-card').forEach(c => c.classList.remove('used'));
-            updateUI();
-        }
-
-        function idiomCorrect() {
-            const bars = document.querySelectorAll('.bar');
-            if(bars[idiomsSolvedInSession]) bars[idiomsSolvedInSession].classList.add('removed');
-            idiomsSolvedInSession++;
-            addGlobalXP(2); // 答啱一題 +2 XP
-            speakIdiom();
-            if (idiomsSolvedInSession === 4) rescueSuccess();
-            else {
-                safeUpdateText('message', `好嘢！開咗第 ${idiomsSolvedInSession} 條柱喇！`);
-                document.getElementById('nextQuestBtn').style.display = 'inline-block';
-            }
-        }
-
-        function rescueSuccess() {
-            document.getElementById('rescue-scene').classList.add('unlocked');
-            safeUpdateText('message', "💎 成功救出動物！太犀利喇！ 💎");
-            document.getElementById('finishRescueBtn').style.display = 'inline-block';
-            savedAnimals.push(currentAnimal);
-            updateCollection();
-            const bar = document.getElementById('xp-bar');
-            if(bar) bar.style.width = "100%";
-            setTimeout(() => { if(bar) bar.style.width = "0%"; }, 2000);
-        }
-
+    
         function updateCollection() {
             const shelf = document.getElementById('collection-shelf');
-            shelf.innerHTML = savedAnimals.map(a => `<div class="collected-animal">${a}</div>`).join('');
-            safeUpdateText('saveCount', savedAnimals.length);
+            if(shelf) {
+                shelf.innerHTML = savedAnimals.map(a => `<div class="collected-animal">${a}</div>`).join('');
+                safeUpdateText('saveCount', savedAnimals.length);
+            }
         }
-
+    
         window.speakIdiom = function() {
             const m = new SpeechSynthesisUtterance(currentIdiom);
             m.lang = 'zh-HK'; m.rate = 0.7; window.speechSynthesis.speak(m);
         }
-
+    
         window.onload = initRescueSession;
     </script>
 </body>
