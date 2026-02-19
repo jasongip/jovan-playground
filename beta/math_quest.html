@@ -1,172 +1,106 @@
 <script type="module">
-        // 1. 引入 Firebase 設定
-        import { db, doc, setDoc } from './firebase-config.js';
+    // 1. 引入 Firebase
+    import { db, doc, setDoc } from './firebase-config.js';
 
-        let questions = [];
-        let timeLeft = 120;
-        let timerInterval = null;
+    let questions = [];
+    let timeLeft = 120;
+    let timerInterval = null;
 
-        function toggleSettings() {
-            const panel = document.getElementById('settings-panel');
-            panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+    // 2. 核心功能掛載去 window (重要：咁樣 HTML 啲 onclick 先搵到)
+    window.toggleSettings = function() {
+        const panel = document.getElementById('settings-panel');
+        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+    };
+
+    window.resetGame = function() {
+        timeLeft = 120;
+        document.getElementById('timer').classList.remove('time-over');
+        const scoreBox = document.getElementById('score-box');
+        if(scoreBox) scoreBox.innerHTML = "";
+        init();
+    };
+
+    window.checkAll = function() {
+        let score = 0;
+        questions.forEach((d, i) => {
+            const inputEl = document.getElementById(`ans-${i}`);
+            const val = parseInt(inputEl.value);
+            inputEl.classList.remove('correct', 'wrong');
+            if (val === d.ans) { score++; inputEl.classList.add('correct'); }
+            else { inputEl.classList.add('wrong'); }
+        });
+        document.getElementById('score-box').innerHTML = "SCORE: " + score + " / 20";
+        
+        if (score === 20) {
+            clearInterval(timerInterval);
+            startHeroStampede();
+            if (timeLeft > 0) spawnFriedChicken();
+            addXP(20); // 滿分加分
+        } else {
+            const fw = document.querySelector('.wrong');
+            if (fw) fw.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+    };
 
-        function resetGame() {
-            timeLeft = 120;
-            document.getElementById('timer').classList.remove('time-over');
-            document.getElementById('score-box').innerHTML = "";
-            init();
+    // 3. 雲端加分邏輯
+    async function addXP(amount) {
+        let currentXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
+        let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+        currentXP += amount;
+        localStorage.setItem('jovan_total_xp', currentXP);
+        if(document.getElementById('display-xp')) document.getElementById('display-xp').innerText = currentXP;
+
+        // 彈出 XP 字樣
+        const msg = document.createElement('div');
+        msg.innerText = `+${amount} XP!`;
+        msg.style = "position:fixed; top:40%; left:50%; transform:translateX(-50%); font-size:4em; color:#55FF55; text-shadow:3px 3px #000; z-index:9999; pointer-events:none; animation: fadeUp 1.5s forwards;";
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 1500);
+
+        try {
+            await setDoc(doc(db, "leaderboard", heroName), {
+                name: heroName,
+                xp: currentXP,
+                lastUpdate: new Date()
+            }, { merge: true });
+            console.log("Cloud Sync Success!");
+        } catch (e) { console.error("Cloud Sync Error", e); }
+    }
+
+    // 4. 初始化
+    function initHero() {
+        const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+        const xp = localStorage.getItem('jovan_total_xp') || 0;
+        document.getElementById('hero-name').innerText = name;
+        document.getElementById('display-xp').innerText = xp;
+    }
+
+    function init() {
+        initHero();
+        const grid = document.getElementById('quizGrid');
+        questions = [];
+        const opts = document.querySelectorAll('.table-opt:checked');
+        const allowedTables = Array.from(opts).map(cb => parseInt(cb.value));
+        const finalTables = allowedTables.length > 0 ? allowedTables : [1,2,3,4,5,6,7];
+
+        for (let i = 0; i < 20; i++) {
+            const a = finalTables[Math.floor(Math.random() * finalTables.length)];
+            const b = Math.floor(Math.random() * 10) + 1;
+            questions.push({ q: a + " x " + b, ans: a * b });
         }
+        
+        grid.innerHTML = questions.map((d, i) => `
+            <div class="q-block" id="block-${i}">
+                <span class="q-text">${d.q} =</span>
+                <input type="number" id="ans-${i}" pattern="[0-9]*">
+            </div>
+        `).join('');
+        startTimer();
+    }
 
-        // RPG: 初始化英雄資料
-        function initHero() {
-            const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
-            const xp = localStorage.getItem('jovan_total_xp') || 0;
-            document.getElementById('hero-name').innerText = name;
-            document.getElementById('display-xp').innerText = xp;
-        }
+    // ... (保留原本嘅 startTimer, startHeroStampede, spawnMob, spawnFriedChicken 內容，但記得搬入黎呢個 <script type="module"> 入面) ...
 
-        // 2. 升級版加分功能 (會同步去 Firebase)
-        async function addXP(amount) {
-            let currentXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
-            let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
-            
-            currentXP += amount;
-            localStorage.setItem('jovan_total_xp', currentXP);
-            document.getElementById('display-xp').innerText = currentXP;
-
-            const msg = document.createElement('div');
-            msg.innerText = `+${amount} XP!`;
-            msg.style = "position:fixed; top:50%; left:50%; transform:translateX(-50%); font-size:4em; color:#55FF55; text-shadow:3px 3px #000; z-index:9999; pointer-events:none; animation: fadeUp 1.5s forwards;";
-            document.body.appendChild(msg);
-            setTimeout(() => msg.remove(), 1500);
-
-            // --- Firebase 雲端同步 ---
-            try {
-                await setDoc(doc(db, "leaderboard", heroName), {
-                    name: heroName,
-                    xp: currentXP,
-                    lastUpdate: new Date()
-                }, { merge: true });
-                console.log("Math XP Cloud Sync Success!");
-            } catch (e) {
-                console.error("Cloud Sync Failed: ", e);
-            }
-        }
-
-        function init() {
-            initHero();
-            const grid = document.getElementById('quizGrid');
-            questions = [];
-            const opts = document.querySelectorAll('.table-opt:checked');
-            const allowedTables = Array.from(opts).map(cb => parseInt(cb.value));
-            const finalTables = allowedTables.length > 0 ? allowedTables : [1,2,3,4,5,6,7];
-
-            for (let i = 0; i < 20; i++) {
-                const a = finalTables[Math.floor(Math.random() * finalTables.length)];
-                const b = Math.floor(Math.random() * 10) + 1;
-                questions.push({ q: a + " x " + b, ans: a * b });
-            }
-            
-            grid.innerHTML = questions.map((d, i) => `
-                <div class="q-block" id="block-${i}">
-                    <span class="q-text">${d.q} =</span>
-                    <input type="number" id="ans-${i}" pattern="[0-9]*">
-                </div>
-            `).join('');
-            
-            startTimer();
-        }
-
-        function startTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                if (timeLeft > 0) {
-                    timeLeft--;
-                    document.getElementById('timer').innerHTML = timeLeft + "s";
-                    if (timeLeft === 0) {
-                        clearInterval(timerInterval);
-                        document.getElementById('timer').classList.add('time-over');
-                        document.getElementById('timer').innerHTML = "TIME UP!";
-                    }
-                }
-            }, 1000);
-        }
-
-        function checkAll() {
-            let score = 0;
-            questions.forEach((d, i) => {
-                const inputEl = document.getElementById(`ans-${i}`);
-                const val = parseInt(inputEl.value);
-                inputEl.classList.remove('correct', 'wrong');
-                if (val === d.ans) { score++; inputEl.classList.add('correct'); }
-                else { inputEl.classList.add('wrong'); }
-            });
-            document.getElementById('score-box').innerHTML = "SCORE: " + score + " / 20";
-            
-            if (score === 20) {
-                clearInterval(timerInterval);
-                startHeroStampede();
-                if (timeLeft > 0) spawnFriedChicken();
-                
-                // RPG: 獎勵 20 XP 並同步
-                addXP(20);
-            } else {
-                const fw = document.querySelector('.wrong');
-                if (fw) fw.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-
-        // --- Mobs & Animations (保持不變) ---
-        function startHeroStampede() {
-            const field = document.getElementById('mob-field');
-            field.innerHTML = '';
-            spawnMob('steve', '<div class="steve-head"><div class="steve-hair"></div><div class="steve-eye"></div></div><div class="steve-body"></div><div class="steve-pants"></div><div class="diamond-sword"></div>', 0, 18);
-            const types = [{ class: 'creeper', h: '<div class="creeper-face"></div>' }, { class: 'pig', h: '<div class="pig-eye"></div><div class="pig-nose"></div>' }];
-            for (let i = 0; i < 20; i++) {
-                const t = types[Math.floor(Math.random() * types.length)];
-                spawnMob(t.class, t.h, (i + 1) * 100, Math.random() * 8 + 10);
-            }
-        }
-
-        function spawnMob(cl, h, delay, spd) {
-            const f = document.getElementById('mob-field');
-            setTimeout(() => {
-                const m = document.createElement('div');
-                m.className = 'mob ' + cl; m.innerHTML = h;
-                m.style.top = Math.random() * 80 + 5 + 'vh';
-                f.appendChild(m);
-                let p = -150;
-                const mv = setInterval(() => {
-                    p += spd; m.style.left = p + 'px';
-                    document.querySelectorAll('.q-block').forEach(b => {
-                        const r = b.getBoundingClientRect(); const mr = m.getBoundingClientRect();
-                        if (mr.right > r.left && mr.left < r.right && mr.bottom > r.top && mr.top < r.bottom) b.classList.add('destroyed');
-                    });
-                    if (p > window.innerWidth + 250) { clearInterval(mv); m.remove(); }
-                }, 30);
-            }, delay);
-        }
-
-        function spawnFriedChicken() {
-            for (let i = 0; i < 40; i++) {
-                setTimeout(() => {
-                    const c = document.createElement('div');
-                    c.className = 'chicken'; c.innerHTML = '🍗'; 
-                    c.style.left = Math.random() * 100 + 'vw';
-                    c.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
-                    document.body.appendChild(c);
-                    setTimeout(() => c.remove(), 3500);
-                }, i * 100);
-            }
-        }
-
-        // 3. 關鍵：將 Function 曝露畀 window
-        window.toggleSettings = toggleSettings;
-        window.resetGame = resetGame;
-        window.checkAll = checkAll;
-        window.onload = init;
-
-    </script>
+    window.onload = init;
+</script>
 </body>
 </html>
