@@ -4,15 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Jovan's Learning Hub</title>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8Z53DTDB23"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-    
       gtag('config', 'G-8Z53DTDB23');
     </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         body { 
             font-family: 'VT323', "Kaiti TC", "楷體", sans-serif; 
@@ -25,118 +26,110 @@
         
         h1 { font-size: 3.5em; text-shadow: 5px 5px #000; margin-bottom: 20px; color: #55FF55; }
 
+        /* 英雄狀態欄樣式 */
+        #hero-panel {
+            background: #3d2b1f; border: 6px solid #1a120c; border-radius: 15px;
+            max-width: 600px; margin: 0 auto 10px; padding: 20px; box-shadow: 0 10px 0 #000;
+        }
+        .hero-label { color: #aaa; font-size: 1.2em; text-transform: uppercase; letter-spacing: 2px; }
+        #hero-name { color: #FFFF55; font-size: 2.8em; text-shadow: 3px 3px #000; margin: 5px 0; }
+        .xp-display { color: #55FF55; font-size: 1.8em; text-shadow: 2px 2px #000; }
+
+        /* 全球領袖榜樣式 */
+        #leaderboard-section {
+            background: rgba(0,0,0,0.85); border: 5px solid #f1c40f; border-radius: 15px;
+            max-width: 600px; margin: 20px auto 30px; padding: 15px; box-shadow: 0 8px 0 #000;
+        }
+        #leaderboard-section h2 { color: #f1c40f; margin-top: 0; font-size: 2em; text-shadow: 2px 2px #000; }
+        .lb-table { width: 100%; border-collapse: collapse; font-size: 1.4em; }
+        .lb-table th { border-bottom: 3px solid #555; padding: 5px; color: #aaa; }
+        .lb-table td { padding: 8px; border-bottom: 1px solid #333; }
+        .rank-1 { color: #f1c40f; font-weight: bold; } /* 金牌色 */
+        .my-score { background: rgba(85, 255, 85, 0.2); } /* 自己嘅分數 highlight */
+
         .app-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 25px;
-            max-width: 900px;
-            margin: auto;
-            padding: 20px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 25px; max-width: 900px; margin: auto; padding: 20px;
         }
 
-        /* App 掣基本樣式 */
         .app-card {
-            background: #8b5e3c;
-            border: 6px solid #3d2b1f;
-            border-bottom-width: 12px;
-            border-radius: 15px;
-            padding: 25px 15px;
-            text-decoration: none;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative; /* 攞嚟定位 NEW tag */
-            transition: all 0.2s ease;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            background: #8b5e3c; border: 6px solid #3d2b1f; border-bottom-width: 12px;
+            border-radius: 15px; padding: 25px 15px; text-decoration: none; color: #fff;
+            display: flex; flex-direction: column; align-items: center; position: relative;
+            transition: all 0.2s ease; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
 
-        /* NEW 標籤樣式 */
         .new-tag {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            background: #ff0000;
-            color: #fff;
-            font-weight: bold;
-            padding: 5px 10px;
-            border-radius: 5px;
-            border: 3px solid #fff;
-            font-size: 1.2em;
-            transform: rotate(15deg);
-            box-shadow: 3px 3px 0 #000;
-            z-index: 100;
-            animation: pulse 1s infinite alternate;
+            position: absolute; top: -10px; right: -10px; background: #ff0000; color: #fff;
+            font-weight: bold; padding: 5px 10px; border-radius: 5px; border: 3px solid #fff;
+            font-size: 1.2em; transform: rotate(15deg); animation: pulse 1s infinite alternate;
         }
 
-        @keyframes pulse {
-            from { transform: rotate(15deg) scale(1); }
-            to { transform: rotate(15deg) scale(1.1); }
-        }
-
-        /* 互動效果 */
-        .app-card:hover, .app-card:active {
-            border-color: #55FF55;
-            box-shadow: 0 0 20px #55FF55, 0 0 40px #00AA00;
-            background: #a06e4a;
-        }
-
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            100% { transform: translate(1px, -2px) rotate(-1deg); }
-        }
-
-        .app-card:hover { animation: shake 0.5s infinite; }
-
-        .app-card:active {
-            animation: none;
-            transform: translateY(8px);
-            border-bottom-width: 4px;
-        }
-
+        @keyframes pulse { from { transform: rotate(15deg) scale(1); } to { transform: rotate(15deg) scale(1.1); } }
+        .app-card:hover { border-color: #55FF55; transform: scale(1.05); }
         .app-icon { font-size: 4.5em; margin-bottom: 10px; filter: drop-shadow(3px 3px 0 #000); }
         .app-title { font-size: 1.6em; text-shadow: 3px 3px #000; font-weight: bold; }
 
         .footer { 
-            margin-top: 60px; 
-            font-size: 1.4em; 
-            background: rgba(0,0,0,0.6); 
-            display: inline-block; 
-            padding: 10px 30px; 
-            border-radius: 50px;
-            border: 2px solid #55FF55;
+            margin-top: 60px; font-size: 1.4em; background: rgba(0,0,0,0.6); 
+            display: inline-block; padding: 10px 30px; border-radius: 50px; border: 2px solid #55FF55;
         }
-    </style>
+		/* 左下角版本標籤 */
+		.version-tag {
+		    position: fixed;
+		    bottom: 10px;
+		    left: 10px;
+		    font-size: 1.2em;
+		    color: rgba(255, 255, 255, 0.4); /* 淡淡地，唔好搶戲 */
+		    text-shadow: 2px 2px 0 #000;
+		    pointer-events: none; /* 費事撳錯 */
+		    z-index: 2000;
+		}
+	</style>
 </head>
 <body>
 
     <h1>🎮 JOVAN'S PLAYGROUND 🎮</h1>
+
+    <div id="hero-panel">
+        <div class="hero-label">Explorer Identity</div>
+        <div id="hero-name">Loading...</div>
+        <div class="xp-display">MY RANK SCORE: <span id="total-xp">0</span> XP</div>
+    </div>
+
+    <div id="leaderboard-section">
+        <h2>🏆 GLOBAL LEADERBOARD 🏆</h2>
+        <table class="lb-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Hero Name</th>
+                    <th>Score</th>
+                </tr>
+            </thead>
+            <tbody id="lb-body">
+                <tr><td colspan="3">Searching for heroes...</td></tr>
+            </tbody>
+        </table>
+    </div>
 
     <div class="app-grid">
         <a href="phonics_lesson.html" class="app-card">
             <div class="app-icon">📖</div>
             <div class="app-title">Phonics Lesson</div>
         </a>
-
         <a href="phonics_hero.html" class="app-card">
             <div class="app-icon">🦸‍♂️</div>
             <div class="app-title">Phonics Hero</div>
         </a>
-
         <a href="math_quest.html" class="app-card">
             <div class="app-icon">⚔️</div>
             <div class="app-title">Math Quest</div>
         </a>
-
         <a href="chinese_quest.html" class="app-card">
             <div class="app-icon">✍️</div>
             <div class="app-title">Chinese Quest</div>
         </a>
-
         <a href="idiom_rescue.html" class="app-card">
             <div class="new-tag">NEW!</div>
             <div class="app-icon">🦊</div>
@@ -146,8 +139,65 @@
 
     <div class="footer">
         Made with ❤️ for Jovan. <br>
-        Reload the page for new adventures!
+        Ready for the next adventure?
     </div>
 
+    <script type="module">
+        // 引入 Firebase
+        import { db, collection, getDocs, query, orderBy, limit } from './firebase-config.js';
+
+        // 初始化個人英雄資訊
+        function initHero() {
+            let heroName = localStorage.getItem('jovan_hero_name');
+            let totalXP = localStorage.getItem('jovan_total_xp') || 0;
+
+            if (!heroName) {
+                const attrs = ["Thunder", "Flame", "Water", "Earth", "Wind", "Light", "Dark"];
+                const classes = ["Knight", "Warrior", "Mage", "Archer", "Paladin", "Ranger"];
+                const rAttr = attrs[Math.floor(Math.random() * attrs.length)];
+                const rClass = classes[Math.floor(Math.random() * classes.length)];
+                heroName = rAttr + " " + rClass;
+                localStorage.setItem('jovan_hero_name', heroName);
+                localStorage.setItem('jovan_total_xp', 0);
+            }
+
+            document.getElementById('hero-name').innerText = heroName;
+            document.getElementById('total-xp').innerText = totalXP;
+            return heroName;
+        }
+
+        // 讀取全球領袖榜
+        async function loadLeaderboard(myHeroName) {
+            try {
+                const q = query(collection(db, "leaderboard"), orderBy("xp", "desc"), limit(10));
+                const querySnapshot = await getDocs(q);
+                const tbody = document.getElementById('lb-body');
+                tbody.innerHTML = "";
+                
+                let rank = 1;
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const isMe = data.name === myHeroName;
+                    tbody.innerHTML += `
+                        <tr class="${isMe ? 'my-score' : ''}">
+                            <td class="rank-${rank}">${rank}</td>
+                            <td style="color: ${isMe ? '#55FF55' : '#FFFF55'}">${data.name} ${isMe ? '(YOU)' : ''}</td>
+                            <td>${data.xp}</td>
+                        </tr>
+                    `;
+                    rank++;
+                });
+            } catch (e) {
+                console.error("Error loading leaderboard: ", e);
+                document.getElementById('lb-body').innerHTML = "<tr><td colspan='3'>Offline Mode</td></tr>";
+            }
+        }
+
+        window.onload = async () => {
+            const myName = initHero();
+            await loadLeaderboard(myName);
+        };
+    </script>
+	<div class="version-tag">v4.0.0-Cloud_Sync</div>
 </body>
 </html>
