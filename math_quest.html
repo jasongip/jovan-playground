@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jovan's Custom Multiplier</title>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <title>Jovan's Math Quest: Cloud RPG</title>
+    
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8Z53DTDB23"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-    
       gtag('config', 'G-8Z53DTDB23');
     </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         body { 
             font-family: 'VT323', monospace; 
@@ -23,7 +24,15 @@
         }
         .container { max-width: 900px; margin: auto; text-align: center; position: relative; z-index: 20; }
         
-        /* 設定掣及面板 [cite: 2026-02-16] */
+        /* 英雄狀態欄樣式 (標準套裝) */
+        #hero-status {
+            background: #3d2b1f; border: 4px solid #1a120c; border-radius: 15px;
+            max-width: 600px; margin: 0 auto 20px; padding: 15px; text-align: center;
+            color: #fff; box-shadow: 0 6px 0 #000;
+        }
+        #hero-name { color: #FFFF55; font-size: 1.8em; text-shadow: 2px 2px #000; margin-bottom: 5px; }
+        .display-xp-text { color: #55FF55; font-size: 1.4em; }
+
         #settings-btn {
             position: fixed; top: 10px; left: 10px; 
             background: #777; border: 3px solid #fff; padding: 5px 15px;
@@ -54,7 +63,6 @@
         input.wrong { border-color: #ff0000; background: #ffcccc; box-shadow: 0 0 10px #ff0000; }
         input.correct { border-color: #00ff00; background: #ccffcc; box-shadow: 0 0 10px #00ff00; }
 
-        /* Mobs 渲染修復 [cite: 2026-02-16] */
         #mob-field { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 15; display: block; }
         .mob { position: absolute; left: -150px; display: block !important; }
         .steve { width: 50px; height: 80px; z-index: 101; }
@@ -78,6 +86,12 @@
         @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
         .destroyed { animation: explode 0.5s forwards; pointer-events: none; }
         @keyframes explode { 0% { transform: scale(1); } 50% { transform: scale(1.1); filter: brightness(1.5); } 100% { transform: scale(0) rotate(15deg); opacity: 0; } }
+
+        @keyframes fadeUp {
+            0% { transform: translate(-50%, 0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(-50%, -100px); opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -100,7 +114,13 @@
 <div id="timer">120s</div>
 
 <div class="container">
-    <h1>⚔️ JOVAN'S MULTIPLIER ⚔️</h1>
+    <h1>⚔️ MATH QUEST RPG ⚔️</h1>
+
+    <div id="hero-status">
+        <div id="hero-name">Loading Explorer...</div>
+        <div class="display-xp-text">TOTAL XP: <span id="display-xp">0</span></div>
+    </div>
+
     <p>20 Questions | Max $x10$</p>
     <div class="quiz-grid" id="quizGrid"></div>
     <button class="btn-check" onclick="checkAll()">CHECK ANSWERS!</button>
@@ -109,35 +129,121 @@
 
 <div id="mob-field"></div>
 
-<script>
+<script type="module">
+    // 1. 引入 Firebase 設定
+    import { db, doc, setDoc } from './firebase-config.js';
+
     let questions = [];
+    let isXpAwarded = false; // 紀錄呢場加咗分未
     let timeLeft = 120;
     let timerInterval = null;
 
-    function toggleSettings() {
-        const panel = document.getElementById('settings-panel');
-        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+    // --- 防禦機制：檢查 ID 是否存在才更新 ---
+    function safeUpdateText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.innerText = text;
     }
 
-    function resetGame() {
-        timeLeft = 120;
-        document.getElementById('timer').classList.remove('time-over');
-        document.getElementById('score-box').innerHTML = "";
-        init();
+    // 2. 初始化英雄資料
+    function initHero() {
+        const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+        const xp = localStorage.getItem('jovan_total_xp') || 0;
+        safeUpdateText('hero-name', name);
+        safeUpdateText('display-xp', xp);
     }
 
-    function init() {
-        const grid = document.getElementById('quizGrid');
-        questions = [];
+    // 3. 雲端加分邏輯 (Firebase Sync)
+    async function addXP(amount) {
+        let currentXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
+        let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
         
-        // 取得選取的乘數表 [cite: 2026-02-16]
+        currentXP += amount;
+        localStorage.setItem('jovan_total_xp', currentXP);
+        safeUpdateText('display-xp', currentXP);
+
+        // 彈出 XP 動畫
+        const msg = document.createElement('div');
+        msg.innerText = `+${amount} XP!`;
+        msg.style = "position:fixed; top:40%; left:50%; transform:translateX(-50%); font-size:4em; color:#55FF55; text-shadow:3px 3px #000; z-index:9999; pointer-events:none; animation: fadeUp 1.5s forwards;";
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 1500);
+
+        try {
+            await setDoc(doc(db, "leaderboard", heroName), {
+                name: heroName,
+                xp: currentXP,
+                lastUpdate: new Date()
+            }, { merge: true });
+            console.log("Math Cloud Sync Success!");
+        } catch (e) { 
+            console.error("Cloud Sync Error:", e); 
+        }
+    }
+
+    // 4. 掛載核心功能去 window (確保 HTML onclick 搵到)
+    window.toggleSettings = function() {
+        const panel = document.getElementById('settings-panel');
+        if (panel) panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+    };
+
+    window.resetGame = function() {
+        timeLeft = 120;
+        const timerEl = document.getElementById('timer');
+        if (timerEl) timerEl.classList.remove('time-over');
+        const scoreBox = document.getElementById('score-box');
+        if (scoreBox) scoreBox.innerHTML = "";
+        init();
+    };
+
+window.checkAll = function() {
+    let score = 0;
+    questions.forEach((d, i) => {
+        const inputEl = document.getElementById(`ans-${i}`);
+        if (inputEl) {
+            const val = parseInt(inputEl.value);
+            inputEl.classList.remove('correct', 'wrong');
+            if (val === d.ans) { score++; inputEl.classList.add('correct'); }
+            else { inputEl.classList.add('wrong'); }
+        }
+    });
+
+    const scoreBox = document.getElementById('score-box');
+    if (scoreBox) scoreBox.innerHTML = "SCORE: " + score + " / 20";
+    
+    // --- 防刷分邏輯 ---
+    if (score === 20) {
+        clearInterval(timerInterval);
+        
+        // 只有「未領獎」先會執行加分同特效
+        if (!isXpAwarded) {
+            if (typeof startHeroStampede === 'function') startHeroStampede();
+            if (timeLeft > 0 && typeof spawnFriedChicken === 'function') spawnFriedChicken();
+            
+            addXP(20);        // 領獎同步去 Firebase
+            isXpAwarded = true; // 鎖死，呢場唔准再領
+            
+            if (scoreBox) scoreBox.innerHTML += "<br>💎 LEVEL CLEAR! REWARD CLAIMED! 💎";
+        } else {
+            if (scoreBox) scoreBox.innerHTML += "<br>💎 (Already claimed) 💎";
+        }
+    } else {
+        const fw = document.querySelector('.wrong');
+        if (fw) fw.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+};
+
+    // 5. 遊戲生成 Logic
+    function init() {
+        initHero();
+        isXpAwarded = false; // 重啟遊戲，解開獎勵鎖
+        const grid = document.getElementById('quizGrid');
+        if (!grid) return;
+
+        questions = [];
         const opts = document.querySelectorAll('.table-opt:checked');
         const allowedTables = Array.from(opts).map(cb => parseInt(cb.value));
-        
-        // 如果無揀，預設出 Table 1-7
         const finalTables = allowedTables.length > 0 ? allowedTables : [1,2,3,4,5,6,7];
 
-        // 生成 20 題 [cite: 2026-02-16]
         for (let i = 0; i < 20; i++) {
             const a = finalTables[Math.floor(Math.random() * finalTables.length)];
             const b = Math.floor(Math.random() * 10) + 1;
@@ -157,40 +263,22 @@
     function startTimer() {
         if (timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(() => {
-            if (timeLeft > 0) {
+            const timerEl = document.getElementById('timer');
+            if (timeLeft > 0 && timerEl) {
                 timeLeft--;
-                document.getElementById('timer').innerHTML = timeLeft + "s";
+                timerEl.innerHTML = timeLeft + "s";
                 if (timeLeft === 0) {
                     clearInterval(timerInterval);
-                    document.getElementById('timer').classList.add('time-over');
-                    document.getElementById('timer').innerHTML = "TIME UP!";
+                    timerEl.classList.add('time-over');
+                    timerEl.innerHTML = "TIME UP!";
                 }
             }
         }, 1000);
     }
 
-    function checkAll() {
-        let score = 0;
-        questions.forEach((d, i) => {
-            const inputEl = document.getElementById(`ans-${i}`);
-            const val = parseInt(inputEl.value);
-            inputEl.classList.remove('correct', 'wrong');
-            if (val === d.ans) { score++; inputEl.classList.add('correct'); }
-            else { inputEl.classList.add('wrong'); }
-        });
-        document.getElementById('score-box').innerHTML = "SCORE: " + score + " / 20";
-        if (score === 20) {
-            clearInterval(timerInterval);
-            startHeroStampede();
-            if (timeLeft > 0) spawnFriedChicken();
-        } else {
-            const fw = document.querySelector('.wrong');
-            if (fw) fw.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    }
-
     function startHeroStampede() {
         const field = document.getElementById('mob-field');
+        if (!field) return;
         field.innerHTML = '';
         spawnMob('steve', '<div class="steve-head"><div class="steve-hair"></div><div class="steve-eye"></div></div><div class="steve-body"></div><div class="steve-pants"></div><div class="diamond-sword"></div>', 0, 18);
         const types = [{ class: 'creeper', h: '<div class="creeper-face"></div>' }, { class: 'pig', h: '<div class="pig-eye"></div><div class="pig-nose"></div>' }];
@@ -231,6 +319,8 @@
             }, i * 100);
         }
     }
+
+    // 啟動！
     window.onload = init;
 </script>
 </body>
