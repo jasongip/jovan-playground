@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jovan's Idiom Rescue: RPG Edition</title>
+    <title>Jovan's Idiom Rescue: Cloud RPG</title>
     
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8Z53DTDB23"></script>
     <script>
@@ -22,6 +22,7 @@
             background-size: 60px 60px; color: #fff; text-align: center; margin: 0; padding: 10px; overflow-x: hidden;
         }
 
+        /* RPG 英雄狀態欄樣式 (標準套裝) */
         #hero-status {
             background: #3d2b1f; border: 4px solid #1a120c; border-radius: 15px;
             max-width: 600px; margin: 0 auto 15px; padding: 12px; text-align: center;
@@ -36,7 +37,6 @@
         .bars-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: space-around; padding: 0 10px; box-sizing: border-box; z-index: 10; }
         .bar { width: 12px; height: 100%; background: #555; border-left: 4px solid #777; border-right: 4px solid #333; transition: transform 0.8s, opacity 0.5s; }
         .bar.removed { transform: translateY(-110%); opacity: 0; }
-
         .unlocked #animal { transform: scale(1.3) rotate(10deg); text-shadow: 0 0 20px #fff; }
 
         .slot-container { display: flex; justify-content: center; gap: 8px; margin: 15px 0; }
@@ -77,7 +77,7 @@
 
     <div id="hero-status">
         <div id="hero-name">Loading Identity...</div>
-        <div class="global-xp-display">TOTAL XP: <span id="global-total-xp">0</span></div>
+        <div class="global-xp-display">TOTAL XP: <span id="display-xp">0</span></div>
     </div>
 
     <div id="rescue-scene">
@@ -170,11 +170,17 @@
         const animalIcons = ["🐷", "🐑", "🐮", "🐔", "🐱", "🐶", "🦊", "🐰", "🐼", "🐨", "🐸", "🐵"];
         let currentIdiom = "", userAns = [], savedAnimals = [], idiomsSolvedInSession = 0, currentAnimal = "";
 
+        // 防禦機制
+        function safeUpdateText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        }
+
         function initHero() {
             const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
             const globalXp = localStorage.getItem('jovan_total_xp') || 0;
-            document.getElementById('hero-name').innerText = name;
-            document.getElementById('global-total-xp').innerText = globalXp;
+            safeUpdateText('hero-name', name);
+            safeUpdateText('display-xp', globalXp);
         }
 
         async function addGlobalXP(amount) {
@@ -182,7 +188,7 @@
             let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
             currentXP += amount;
             localStorage.setItem('jovan_total_xp', currentXP);
-            document.getElementById('global-total-xp').innerText = currentXP;
+            safeUpdateText('display-xp', currentXP);
 
             const msg = document.createElement('div');
             msg.innerText = `+${amount} XP!`;
@@ -192,14 +198,12 @@
 
             try {
                 await setDoc(doc(db, "leaderboard", heroName), {
-                    name: heroName,
-                    xp: currentXP,
-                    lastUpdate: new Date()
+                    name: heroName, xp: currentXP, lastUpdate: new Date()
                 }, { merge: true });
             } catch (e) { console.error("Cloud Sync Failed:", e); }
         }
 
-        function initRescueSession() {
+        window.initRescueSession = function() {
             initHero();
             idiomsSolvedInSession = 0;
             currentAnimal = animalIcons[Math.floor(Math.random() * animalIcons.length)];
@@ -211,11 +215,11 @@
             startNewIdiomInRescue();
         }
 
-        function startNewIdiomInRescue() {
+        window.startNewIdiomInRescue = function() {
             const data = idiomDB[Math.floor(Math.random() * idiomDB.length)];
             currentIdiom = data.word;
             userAns = [];
-            document.getElementById('message').innerText = `第 ${idiomsSolvedInSession + 1}/4 關：${data.hint}`;
+            safeUpdateText('message', `第 ${idiomsSolvedInSession + 1}/4 關：${data.hint}`);
             document.getElementById('nextQuestBtn').style.display = 'none';
             const shuffled = currentIdiom.split('').sort(() => Math.random() - 0.5);
             const cardsDiv = document.getElementById('cards');
@@ -223,7 +227,7 @@
             updateUI();
         }
 
-        function placeWord(char, cardIdx) {
+        window.placeWord = function(char, cardIdx) {
             let nextSlot = userAns.length;
             if (nextSlot < 4) {
                 if (char === currentIdiom[nextSlot]) {
@@ -232,10 +236,12 @@
                     updateUI();
                     if (userAns.length === 4) idiomCorrect();
                 } else {
-                    document.getElementById('message').innerText = "搵錯字喇，聽多次讀音再試下？";
+                    safeUpdateText('message', "搵錯字喇，聽多次讀音再試下？");
                     const slot = document.getElementById(`slot-${nextSlot}`);
-                    slot.style.background = "rgba(231, 76, 60, 0.5)";
-                    setTimeout(() => slot.style.background = "rgba(0,0,0,0.6)", 300);
+                    if(slot) {
+                        slot.style.background = "rgba(231, 76, 60, 0.5)";
+                        setTimeout(() => slot.style.background = "rgba(0,0,0,0.6)", 300);
+                    }
                 }
             }
         }
@@ -243,12 +249,14 @@
         function updateUI() {
             for (let i = 0; i < 4; i++) {
                 const slot = document.getElementById(`slot-${i}`);
-                slot.innerText = userAns[i] || "";
-                slot.classList.toggle('correct-slot', !!userAns[i]);
+                if(slot) {
+                    slot.innerText = userAns[i] || "";
+                    slot.classList.toggle('correct-slot', !!userAns[i]);
+                }
             }
         }
 
-        function resetSlots() {
+        window.resetSlots = function() {
             userAns = [];
             document.querySelectorAll('.word-card').forEach(c => c.classList.remove('used'));
             updateUI();
@@ -256,43 +264,39 @@
 
         function idiomCorrect() {
             const bars = document.querySelectorAll('.bar');
-            bars[idiomsSolvedInSession].classList.add('removed');
+            if(bars[idiomsSolvedInSession]) bars[idiomsSolvedInSession].classList.add('removed');
             idiomsSolvedInSession++;
-            addGlobalXP(2); // 答啱一題 +2XP
+            addGlobalXP(2); // 答啱一題 +2 XP
             speakIdiom();
             if (idiomsSolvedInSession === 4) rescueSuccess();
             else {
-                document.getElementById('message').innerText = `好嘢！開咗第 ${idiomsSolvedInSession} 條柱喇！`;
+                safeUpdateText('message', `好嘢！開咗第 ${idiomsSolvedInSession} 條柱喇！`);
                 document.getElementById('nextQuestBtn').style.display = 'inline-block';
             }
         }
 
         function rescueSuccess() {
             document.getElementById('rescue-scene').classList.add('unlocked');
-            document.getElementById('message').innerText = "💎 成功救出動物！太犀利喇！ 💎";
+            safeUpdateText('message', "💎 成功救出動物！太犀利喇！ 💎");
             document.getElementById('finishRescueBtn').style.display = 'inline-block';
             savedAnimals.push(currentAnimal);
             updateCollection();
-            document.getElementById('xp-bar').style.width = "100%";
-            setTimeout(() => { document.getElementById('xp-bar').style.width = "0%"; }, 2000);
+            const bar = document.getElementById('xp-bar');
+            if(bar) bar.style.width = "100%";
+            setTimeout(() => { if(bar) bar.style.width = "0%"; }, 2000);
         }
 
         function updateCollection() {
             const shelf = document.getElementById('collection-shelf');
             shelf.innerHTML = savedAnimals.map(a => `<div class="collected-animal">${a}</div>`).join('');
-            document.getElementById('saveCount').innerText = savedAnimals.length;
+            safeUpdateText('saveCount', savedAnimals.length);
         }
 
-        function speakIdiom() {
+        window.speakIdiom = function() {
             const m = new SpeechSynthesisUtterance(currentIdiom);
             m.lang = 'zh-HK'; m.rate = 0.7; window.speechSynthesis.speak(m);
         }
 
-        window.placeWord = placeWord;
-        window.resetSlots = resetSlots;
-        window.startNewIdiomInRescue = startNewIdiomInRescue;
-        window.initRescueSession = initRescueSession;
-        window.speakIdiom = speakIdiom;
         window.onload = initRescueSession;
     </script>
 </body>
