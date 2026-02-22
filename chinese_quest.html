@@ -239,25 +239,80 @@
         const reward = document.getElementById('steve-reward');
         if(reward) reward.classList.remove('show-steve'); 
     };
-
+    
 window.checkWriting = function() {
-    const tD = tCtx.getImageData(0, 0, 320, 320).data, dD = dCtx.getImageData(0, 0, 320, 320).data;
-    let tP = 0, mP = 0;
-    for (let i = 3; i < tD.length; i += 4) { if (tD[i] > 10) { tP++; if (dD[i] > 10) mP++; } }
-    const score = (mP / tP) * 100;
+    const tD = tCtx.getImageData(0, 0, 320, 320).data;
+    const dD = dCtx.getImageData(0, 0, 320, 320).data;
+    
+    // --- 1. 助手函數：搵出字體嘅邊界 (Bounding Box) ---
+    function getBounds(data) {
+        let minX = 320, minY = 320, maxX = 0, maxY = 0;
+        let found = false;
+        for (let y = 0; y < 320; y++) {
+            for (let x = 0; x < 320; x++) {
+                if (data[(y * 320 + x) * 4 + 3] > 20) { // Alpha channel > 20
+                    if (x < minX) minX = x; if (x > maxX) maxX = x;
+                    if (y < minY) minY = y; if (y > maxY) maxY = y;
+                    found = true;
+                }
+            }
+        }
+        return found ? { x: minX, y: minY, w: maxX - minX, h: maxY - minY } : null;
+    }
+
+    const tBounds = getBounds(tD);
+    const dBounds = getBounds(dD);
+
+    if (!dBounds) {
+        safeUpdateText('message', "你仲未寫字喎！");
+        return;
+    }
+
+    // --- 2. 結構比對：使用 50x50 網格歸一化 ---
+    const gridSize = 50;
+    let matches = 0;
+    let totalTemplateInGrid = 0;
+    let extraPixels = 0;
+
+    for (let gy = 0; gy < gridSize; gy++) {
+        for (let gx = 0; gx < gridSize; gx++) {
+            // 映射回原圖坐標 (線性縮放)
+            const tx = tBounds.x + Math.floor(gx * tBounds.w / gridSize);
+            const ty = tBounds.y + Math.floor(gy * tBounds.h / gridSize);
+            const dx = dBounds.x + Math.floor(gx * dBounds.w / gridSize);
+            const dy = dBounds.y + Math.floor(gy * dBounds.h / gridSize);
+
+            const isT = tD[(ty * 320 + tx) * 4 + 3] > 20;
+            const isD = dD[(dy * 320 + dx) * 4 + 3] > 20;
+
+            if (isT) {
+                totalTemplateInGrid++;
+                if (isD) matches++; // 命中結構，加分
+            } else {
+                if (isD) extraPixels++; // 畫出界，計入扣分項
+            }
+        }
+    }
+
+    // --- 3. 分數計算 ---
+    const matchScore = (matches / totalTemplateInGrid) * 100;
+    // 懲罰值：出界像素佔網格比例，0.7 是難度系數
+    const penalty = (extraPixels / (gridSize * gridSize - totalTemplateInGrid)) * 100 * 0.7;
+    const finalScore = Math.max(0, Math.round(matchScore - penalty));
+
     const threshold = (currentMode === 'dictation') ? 40 : 60;
     
-    if (score >= threshold) {
-        safeUpdateText('message', `好勁呀！${Math.round(score)}% 似！💎`);
+    // --- 4. 遊戲判定邏輯 ---
+    if (finalScore >= threshold) {
+        safeUpdateText('message', `結構好準！${finalScore}% 相似！💎`);
         document.getElementById('steve-reward').classList.add('show-steve');
         
-        // --- 核心防刷分 Logic ---
         if (!isXpAwarded) {
             if (currentMode === 'dictation') {
                 if (!isHintRevealed) {
                     dictationCorrect++; safeUpdateText('dictationCount', dictationCorrect);
                     streak++; 
-                    addGlobalXP(3); // 聽默 +3 XP
+                    addGlobalXP(3); 
                 } else {
                     document.getElementById('message').innerText += " (睇咗提示唔計分)";
                     streak = 0;
@@ -265,29 +320,31 @@ window.checkWriting = function() {
             } else {
                 practiceCorrect++; safeUpdateText('practiceCount', practiceCorrect);
                 streak = 0; 
-                addGlobalXP(1); // 練習 +1 XP
+                addGlobalXP(1); 
             }
             
-            // 本地 Level Up XP 照加 (因為呢個係 Session 內嘅，唔影響排名榜)
             xp += 20;
             if (xp >= 100) { 
                 level++; xp = 0; 
                 safeUpdateText('xp-text', "LEVEL " + level + " UP!"); 
                 setTimeout(() => safeUpdateText('xp-text', "LEVEL " + level), 2000); 
             }
-            
-            isXpAwarded = true; // 鎖死：呢個字嘅 Global XP 已經攞咗喇！
+            isXpAwarded = true;
         } else {
             document.getElementById('message').innerText += " (Score checked!)";
         }
-        // -----------------------
 
         updateXPUI(); updateComboUI();
         if (streak >= 5) triggerTNT();
         speakWord();
         setTimeout(() => { if(confirm("大勝利！下一個？")) initGame(); }, 1200);
     } else {
-        safeUpdateText('message', `得 ${Math.round(score)}%... 再試下！`);
+        // 如果扣分太重，特別提示
+        if (penalty > 30) {
+            safeUpdateText('message', `唔好塗黑呀！要寫出字嘅形狀！(扣分: ${Math.round(penalty)})`);
+        } else {
+            safeUpdateText('message', `似得 ${finalScore}%... 再試下寫好啲！`);
+        }
         streak = 0; updateComboUI();
     }
 };
