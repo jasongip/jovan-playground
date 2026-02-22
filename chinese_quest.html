@@ -244,22 +244,22 @@ window.checkWriting = function() {
     const tD = tCtx.getImageData(0, 0, 320, 320).data;
     const dD = dCtx.getImageData(0, 0, 320, 320).data;
     
-    // --- 1. 助手函數：搵出邊界並計算像素總數 ---
+    // --- 1. 助手函數：搵出邊界並計算實際像素總數 ---
     function getBounds(data) {
         let minX = 320, minY = 320, maxX = 0, maxY = 0;
         let found = false;
-        let pixelCount = 0;
+        let pCount = 0;
         for (let y = 0; y < 320; y++) {
             for (let x = 0; x < 320; x++) {
                 if (data[(y * 320 + x) * 4 + 3] > 20) {
                     if (x < minX) minX = x; if (x > maxX) maxX = x;
                     if (y < minY) minY = y; if (y > maxY) maxY = y;
                     found = true;
-                    pixelCount++; // 紀錄畫咗幾多粒像素
+                    pCount++;
                 }
             }
         }
-        return found ? { x: minX, y: minY, w: maxX - minX, h: maxY - minY, pCount: pixelCount } : null;
+        return found ? { x: minX, y: minY, w: maxX - minX, h: maxY - minY, pCount: pCount } : null;
     }
 
     const tBounds = getBounds(tD);
@@ -288,29 +288,31 @@ window.checkWriting = function() {
 
             if (isT) {
                 totalT++;
-                if (isD) matches++;
+                if (isD) matches++; 
             } else {
-                if (isD) extraPixels++;
+                if (isD) extraPixels++; 
             }
         }
     }
 
-    // --- 3. 核心邏輯：計算密度 ---
-    const tDensity = tBounds.pCount / (tBounds.w * tBounds.h);
-    const dDensity = dBounds.pCount / (dBounds.w * dBounds.h);
+    // --- 3. 核心邏輯：計算密度比對 ---
+    const tDensity = tBounds.pCount / (tBounds.w * tBounds.h); // 範本密度
+    const dDensity = dBounds.pCount / (dBounds.w * dBounds.h); // 阿仔畫嘅密度
     
-    // 如果畫嘅密度高過範本 2.2 倍，極大機會係塗黑
-    const isScribble = dDensity > (tDensity * 2.2);
+    // 如果阿仔畫嘅位佔佢邊界框嘅比例，高過範本 2.5 倍，就判定為「塗黑」
+    const isScribble = dDensity > (tDensity * 2.5);
 
     const matchScore = (matches / totalT) * 100;
-    // 輕量化懲罰：將系數由 0.7 減到 0.2，唔會扣得咁傷，但對塗黑依然有效
-    const softPenalty = (extraPixels / (gridSize * gridSize - totalT)) * 100 * 0.2;
-    const finalScore = Math.max(0, Math.round(matchScore - softPenalty));
+    
+    // 輕量化懲罰：將系數設為 0.3，唔會太傷 Jovan 自尊，但足以對付塗黑
+    const penalty = (extraPixels / (gridSize * gridSize - totalT)) * 100 * 0.3;
+    
+    // 最終分數公式
+    const finalScore = Math.max(0, Math.round(matchScore - penalty));
 
     const threshold = (currentMode === 'dictation') ? 40 : 60;
     
-    // --- 4. 遊戲判定 (加入密度檢查) ---
-    // 就算 finalScore 高，如果 isScribble 是 true，都唔畀過
+    // --- 4. 判定邏輯 (增加密度門檻) ---
     if (finalScore >= threshold && !isScribble) {
         safeUpdateText('message', `結構好準！${finalScore}% 相似！💎`);
         document.getElementById('steve-reward').classList.add('show-steve');
