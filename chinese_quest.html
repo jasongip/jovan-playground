@@ -245,16 +245,14 @@ window.checkWriting = function() {
     const dD = dCtx.getImageData(0, 0, 320, 320).data;
     
     function getBounds(data) {
-        let minX = 320, minY = 320, maxX = 0, maxY = 0;
+        let minX = 320, minY = 320, maxX = 0, maxY = 0, pCount = 0;
         let found = false;
-        let pCount = 0;
         for (let y = 0; y < 320; y++) {
             for (let x = 0; x < 320; x++) {
                 if (data[(y * 320 + x) * 4 + 3] > 20) {
                     if (x < minX) minX = x; if (x > maxX) maxX = x;
                     if (y < minY) minY = y; if (y > maxY) maxY = y;
-                    found = true;
-                    pCount++;
+                    found = true; pCount++;
                 }
             }
         }
@@ -264,15 +262,10 @@ window.checkWriting = function() {
     const tBounds = getBounds(tD);
     const dBounds = getBounds(dD);
 
-    if (!dBounds) {
-        safeUpdateText('message', "你仲未寫字喎！");
-        return;
-    }
+    if (!dBounds) { safeUpdateText('message', "你仲未寫字喎！"); return; }
 
     const gridSize = 50;
-    let matches = 0;
-    let totalT = 0;
-    let extraPixels = 0;
+    let matches = 0, totalT = 0, extraPixels = 0;
 
     for (let gy = 0; gy < gridSize; gy++) {
         for (let gx = 0; gx < gridSize; gx++) {
@@ -284,27 +277,20 @@ window.checkWriting = function() {
             const isT = tD[(ty * 320 + tx) * 4 + 3] > 20;
             const isD = dD[(dy * 320 + dx) * 4 + 3] > 20;
 
-            if (isT) {
-                totalT++;
-                if (isD) matches++; 
-            } else if (isD) {
-                extraPixels++; 
-            }
+            if (isT) { totalT++; if (isD) matches++; }
+            else if (isD) { extraPixels++; }
         }
     }
 
-    // --- 核心改動：加強密度偵測 ---
-    const dDensity = dBounds.pCount / (dBounds.w * dBounds.h);
-    const tDensity = tBounds.pCount / (tBounds.w * tBounds.h);
-    
-    // 1. 如果墨水密度超過 55%，或者係範本嘅 2 倍以上，就判定為塗黑
-    const isScribble = dDensity > 0.55 || dDensity > (tDensity * 2.0);
-
+    // --- 關鍵調整：鬆綁防作弊 ---
     const matchScore = (matches / totalT) * 100;
+    const dDensity = dBounds.pCount / (dBounds.w * dBounds.h);
     
-    // 2. 將 Penalty 系數提高到 1.0 (1:1 扣分)
-    // 咁樣如果佢填滿空白位，個分會跌到好低
-    const penalty = (extraPixels / (gridSize * gridSize - totalT)) * 100 * 1.0;
+    // 只有密度極高（例如 65% 面積都係黑）先叫塗黑
+    const isScribble = dDensity > 0.65;
+
+    // 將 Penalty 乘數由 1.0 減到 0.35，畀返多啲空間手寫筆劃
+    const penalty = (extraPixels / (gridSize * gridSize - totalT)) * 100 * 0.35;
     
     const finalScore = Math.max(0, Math.round(matchScore - penalty));
     const threshold = (currentMode === 'dictation') ? 40 : 60;
@@ -314,30 +300,25 @@ window.checkWriting = function() {
         document.getElementById('steve-reward').classList.add('show-steve');
         
         if (!isXpAwarded) {
-            // ... 原本嘅 XP 加分邏輯 ...
             if (currentMode === 'dictation') {
                 if (!isHintRevealed) {
                     dictationCorrect++; safeUpdateText('dictationCount', dictationCorrect);
                     streak++; addGlobalXP(3); 
-                } else {
-                    document.getElementById('message').innerText += " (睇咗提示唔計分)";
-                    streak = 0;
-                }
+                } else { streak = 0; }
             } else {
                 practiceCorrect++; safeUpdateText('practiceCount', practiceCorrect);
                 streak = 0; addGlobalXP(1); 
             }
             xp += 20;
-            if (xp >= 100) { level++; xp = 0; safeUpdateText('xp-text', "LEVEL " + level + " UP!"); setTimeout(() => safeUpdateText('xp-text', "LEVEL " + level), 2000); }
+            if (xp >= 100) { level++; xp = 0; safeUpdateText('xp-text', "LEVEL UP!"); }
             isXpAwarded = true;
         }
-
         updateXPUI(); updateComboUI();
         if (streak >= 5) triggerTNT();
         speakWord();
         setTimeout(() => { if(confirm("大勝利！下一個？")) initGame(); }, 1200);
     } else {
-        if (isScribble || penalty > 40) {
+        if (isScribble) {
             safeUpdateText('message', `唔好塗黑呀！要寫出字嘅形狀！`);
         } else {
             safeUpdateText('message', `似得 ${finalScore}%... 再試下寫好啲！`);
