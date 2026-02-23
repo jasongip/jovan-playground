@@ -293,7 +293,7 @@ window.checkWriting = function() {
     const penalty = (extraPixels / (gridSize * gridSize - totalT)) * 100 * 0.35;
     
     const finalScore = Math.max(0, Math.round(matchScore - penalty));
-    const threshold = (currentMode === 'dictation') ? 40 : 60;
+    const threshold = (currentMode === 'dictation') ? 30 : 50;
     
     if (finalScore >= threshold && !isScribble) {
         safeUpdateText('message', `結構好準！${finalScore}% 相似！💎`);
