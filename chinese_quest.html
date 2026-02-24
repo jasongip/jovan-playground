@@ -213,14 +213,28 @@
     window.toggleTooltip = function() { const content = document.getElementById('tooltip-content'); if(content) content.style.display = (content.style.display === 'block') ? 'none' : 'block'; };
     window.setMode = function(mode) { currentMode = mode; initGame(); };
     
-    window.speakWord = function() { 
-        if (!currentWord) return;
-        window.speechSynthesis.cancel();
-        const textToSpeak = currentMode === 'dictation' ? `${currentWord}。句子係：${currentSentence}` : currentWord;
-        const msg = new SpeechSynthesisUtterance(textToSpeak);
-        msg.lang = 'zh-HK'; msg.rate = 0.7;
-        window.speechSynthesis.speak(msg); 
-    };
+window.speakWord = function() { 
+    if (!currentWord) return;
+
+    // 1. 先清空之前嘅語音隊列，防止重疊
+    window.speechSynthesis.cancel();
+
+    // 2. 核心修正：用 .replace() 將底線換成實際嘅字
+    // 咁樣語音引擎就會讀「公園入面有鞦韆」而唔係「下劃線園入面...」
+    const naturalSentence = currentSentence.replace(/____/g, currentWord);
+    
+    // 3. 組合要讀嘅內容
+    const textToSpeak = currentMode === 'dictation' ? `${currentWord}。句子係：${naturalSentence}` : currentWord;
+    
+    const msg = new SpeechSynthesisUtterance(textToSpeak);
+    
+    // 4. 設定語言同語速
+    msg.lang = 'zh-HK'; 
+    msg.rate = 0.7; // 維持稍慢嘅語速，方便小朋友聽清楚
+    
+    // 5. 正式朗讀
+    window.speechSynthesis.speak(msg); 
+};
 
     window.revealHint = function() { 
         if (currentMode === 'dictation') { 
