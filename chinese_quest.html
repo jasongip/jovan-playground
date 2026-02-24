@@ -103,8 +103,8 @@
 
 <div class="container">
     <div class="mode-switch">
-        <button id="modePractice" class="mode-btn mode-active" onclick="setMode('practice')">練習模式 (60%)</button>
-        <button id="modeDictation" class="mode-btn" onclick="setMode('dictation')">聽默模式 (40%)</button>
+        <button id="modePractice" class="mode-btn mode-active" onclick="setMode('practice')">練習模式 (50%)</button>
+        <button id="modeDictation" class="mode-btn" onclick="setMode('dictation')">聽默模式 (35%)</button>
     </div>
     <h1>👾 CHINESE 145 QUEST PRO 👾</h1>
     <div id="word-display-box">
@@ -244,6 +244,7 @@ window.checkWriting = function() {
     const tD = tCtx.getImageData(0, 0, 320, 320).data;
     const dD = dCtx.getImageData(0, 0, 320, 320).data;
     
+    // 1. 助手函數：搵出邊界並計算實際像素總數
     function getBounds(data) {
         let minX = 320, minY = 320, maxX = 0, maxY = 0, pCount = 0;
         let found = false;
@@ -282,19 +283,24 @@ window.checkWriting = function() {
         }
     }
 
-    // --- 關鍵調整：鬆綁防作弊 ---
+    // 2. 結構與密度運算
     const matchScore = (matches / totalT) * 100;
     const dDensity = dBounds.pCount / (dBounds.w * dBounds.h);
     
-    // 只有密度極高（例如 65% 面積都係黑）先叫塗黑
+    // 判定是否塗黑：密度高過 65% 直接攔截
     const isScribble = dDensity > 0.65;
 
-    // 將 Penalty 乘數由 1.0 減到 0.35，畀返多啲空間手寫筆劃
+    // 懲罰系數保持寬容 (0.35)
     const penalty = (extraPixels / (gridSize * gridSize - totalT)) * 100 * 0.35;
     
     const finalScore = Math.max(0, Math.round(matchScore - penalty));
-    const threshold = (currentMode === 'dictation') ? 30 : 50;
+
+    // --- 門檻微調 (練習 50% / 聽默 35%) ---
+    const threshold = (currentMode === 'dictation') ? 35 : 50;
     
+    
+
+    // 3. 遊戲判定邏輯
     if (finalScore >= threshold && !isScribble) {
         safeUpdateText('message', `結構好準！${finalScore}% 相似！💎`);
         document.getElementById('steve-reward').classList.add('show-steve');
@@ -321,7 +327,7 @@ window.checkWriting = function() {
         if (isScribble) {
             safeUpdateText('message', `唔好塗黑呀！要寫出字嘅形狀！`);
         } else {
-            safeUpdateText('message', `似得 ${finalScore}%... 再試下寫好啲！`);
+            safeUpdateText('message', `得 ${finalScore}%... 再試下寫好啲！`);
         }
         streak = 0; updateComboUI();
     }
