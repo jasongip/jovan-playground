@@ -21,8 +21,6 @@
             background-image: repeating-conic-gradient(#5c3c21 0% 25%, #4e341c 0% 50%);
             background-size: 40px 40px; color: #fff; padding: 10px; text-align: center; overflow: hidden;
         }
-
-        /* RPG 英雄狀態欄樣式 (標準套裝) */
         #hero-status {
             background: #3d2b1f; border: 4px solid #1a120c; border-radius: 15px;
             max-width: 600px; margin: 0 auto 15px; padding: 12px; text-align: center;
@@ -30,33 +28,18 @@
         }
         #hero-name { color: #FFFF55; font-size: 1.8em; text-shadow: 2px 2px #000; margin-bottom: 5px; }
         .global-xp-display { color: #55FF55; font-size: 1.4em; }
-
-        /* XP Bar 樣式 */
         #xp-container { position: fixed; bottom: 0; left: 0; width: 100%; height: 25px; background: #222; border-top: 4px solid #000; z-index: 2000; }
         #xp-bar { height: 100%; width: 0%; background: #55FF55; transition: width 0.5s ease; box-shadow: inset 0 5px 10px rgba(255,255,255,0.3); }
         #xp-text { position: absolute; top: -28px; left: 50%; transform: translateX(-50%); color: #55FF55; font-size: 1.6em; text-shadow: 2px 2px #000; font-weight: bold; }
-
-        /* TNT Combo 樣式 */
         #tnt-box { position: fixed; bottom: 45px; right: 20px; width: 80px; height: 80px; z-index: 1500; display: none; }
-        .tnt-sprite { 
-            width: 100%; height: 100%; background: #d32f2f; border: 4px solid #000; 
-            display: flex; align-items: center; justify-content: center; font-size: 1.5em; font-weight: bold; color: #fff;
-            box-shadow: 4px 4px 0 #000;
-        }
+        .tnt-sprite { width: 100%; height: 100%; background: #d32f2f; border: 4px solid #000; display: flex; align-items: center; justify-content: center; font-size: 1.5em; font-weight: bold; color: #fff; box-shadow: 4px 4px 0 #000; }
         .combo-count { position: absolute; top: -25px; left: 0; width: 100%; color: #ffff55; font-size: 1.8em; text-shadow: 2px 2px #000; }
-
-        @keyframes explode {
-            0% { transform: scale(1); filter: brightness(1); }
-            50% { transform: scale(1.4); filter: brightness(3); }
-            100% { transform: scale(0); opacity: 0; }
-        }
+        @keyframes explode { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.4); filter: brightness(3); } 100% { transform: scale(0); opacity: 0; } }
         .exploding { animation: explode 0.5s forwards; }
-
         #help-btn { position: fixed; top: 10px; left: 10px; background: #f1c40f; border: 3px solid #fff; border-radius: 50%; width: 40px; height: 40px; line-height: 40px; font-size: 1.5em; cursor: pointer; z-index: 2000; box-shadow: 3px 3px 0 #000; }
         #tooltip-content { display: none; position: fixed; top: 60px; left: 10px; background: rgba(0,0,0,0.9); border: 2px solid #55FF55; padding: 15px; width: 280px; text-align: left; font-size: 1.1em; z-index: 2000; box-shadow: 5px 5px 0 #000; line-height: 1.4; }
         #counter-group { position: fixed; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 1000; }
         .counter-tag { background: rgba(0,0,0,0.8); border: 2px solid #55FF55; padding: 5px 12px; font-size: 1.4em; color: #FFFF55; text-align: right; }
-        .dictation-tag { border-color: #f1c40f; color: #f1c40f; }
         .mode-switch { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; }
         .mode-btn { padding: 6px 15px; font-family: 'VT323', sans-serif; cursor: pointer; background: #777; border: 3px solid #333; color: #fff; font-size: 1.2em; }
         .mode-active { background: #3498db !important; border-color: #fff !important; }
@@ -75,12 +58,7 @@
         #message { font-size: 1.6em; margin-top: 5px; color: #FFFF55; text-shadow: 2px 2px #000; min-height: 1.2em; }
         #steve-reward { position: fixed; bottom: -200px; left: 50%; transform: translateX(-50%); transition: 0.5s; z-index: 100; pointer-events: none; }
         .show-steve { bottom: 45px !important; }
-
-        @keyframes fadeUp {
-            0% { transform: translate(-50%, 0); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translate(-50%, -100px); opacity: 0; }
-        }
+        @keyframes fadeUp { 0% { transform: translate(-50%, 0); opacity: 0; } 50% { opacity: 1; } 100% { transform: translate(-50%, -100px); opacity: 0; } }
     </style>
 </head>
 <body>
@@ -148,167 +126,67 @@
     import { db, doc, setDoc } from './firebase-config.js';
 
     const wordBank = [
-    { w: "一", s: "我有____個蘋果。" },
-    { w: "二", s: "小貓有____隻耳朵。" },
-    { w: "三", s: "三角形有____條邊。" },
-    { w: "四", s: "一年有____個季節。" },
-    { w: "五", s: "一隻手有____隻手指。" },
-    { w: "六", s: "雪花有____個角。" },
-    { w: "七", s: "一星期有____日。" },
-    { w: "八", s: "蜘蛛有____條腿。" },
-    { w: "九", s: "____九八十一。" },
-    { w: "十", s: "我有____隻腳趾。" },
-    { w: "百", s: "一百分係____分。" },
-    { w: "千", s: "呢度有____幾個人。" },
-    { w: "上", s: "我坐喺張櫈____面。" },
-    { w: "下", s: "地____有一粒糖。" },
-    { w: "左", s: "寫字要用____手或者右手。" },
-    { w: "右", s: "轉____就係超市。" },
-    { w: "大", s: "倫敦係一個好____嘅城市。" },
-    { w: "小", s: "芝鼠係一隻好____嘅動物。" },
-    { w: "多", s: "英國有好多____公園。" },
-    { w: "少", s: "今日好____人出街。" },
-    { w: "人", s: "我係一個好____。" },
-    { w: "口", s: "我用____嚟食嘢。" },
-    { w: "手", s: "我拍拍____。" },
-    { w: "足", s: "我踢足____球。" },
-    { w: "目", s: "我哋要有____標。" },
-    { w: "耳", s: "我用____聽音樂。" },
-    { w: "心", s: "我開____咁玩。" },
-    { w: "頭", s: "我戴頂帽喺個____度。" },
-    { w: "山", s: "我哋去爬____。" },
-    { w: "水", s: "口渴要飲____。" },
-    { w: "木", s: "張枱係用____整嘅。" },
-    { w: "禾", s: "田入面有____苗。" },
-    { w: "土", s: "花盆入面有____。" },
-    { w: "日", s: "今____天氣好好。" },
-    { w: "月", s: "月亮喺____球上面。" },
-    { w: "天", s: "____上面有飛機。" },
-    { w: "火", s: "煮飯要用____。" },
-    { w: "風", s: "秋天啲____好涼。" },
-    { w: "雨", s: "英國成日落____。" },
-    { w: "電", s: "記得關____燈。" },
-    { w: "春", s: "____天開好多花。" },
-    { w: "夏", s: "____天好熱。" },
-    { w: "秋", s: "____天樹葉會變黃。" },
-    { w: "冬", s: "____天會落雪。" },
-    { w: "爸", s: "____爸帶我去玩。" },
-    { w: "媽", s: "____媽煮飯好好食。" },
-    { w: "哥", s: "____哥比我高。" },
-    { w: "姐", s: "姐____比我大。" },
-    { w: "弟", s: "弟____比我細。" },
-    { w: "妹", s: "我有一個妹妹____。" },
-    { w: "男", s: "我是個男____仔。" },
-    { w: "女", s: "她是個女____仔。" },
-    { w: "老", s: "公公年紀____喇。" },
-    { w: "少", s: "老____咸宜。" },
-    { w: "師", s: "老____教我寫字。" },
-    { w: "生", s: "我係一名學____。" },
-    { w: "友", s: "好朋____一齊玩。" },
-    { w: "公", s: "公____園有草地。" },
-    { w: "婆", s: "婆____煮湯畀我飲。" },
-    { w: "校", s: "學____有好多同學。" },
-    { w: "家", s: "我____住喺英國。" },
-    { w: "門", s: "入屋要開____。" },
-    { w: "窗", s: "透過____口望出去。" },
-    { w: "床", s: "夜晚喺____度瞓覺。" },
-    { w: "椅", s: "坐喺櫈____上面。" },
-    { w: "桌", s: "書____上面有筆。" },
-    { w: "燈", s: "天黑要開____。" },
-    { w: "筆", s: "我用鉛____寫字。" },
-    { w: "書", s: "圖書館有好多____。" },
-    { w: "紙", s: "畫畫要用____。" },
-    { w: "畫", s: "我最鍾意____畫。" },
-    { w: "歌", s: "一齊唱首歌____。" },
-    { w: "花", s: "花____園開滿花。" },
-    { w: "草", s: "牛喺草____地食草。" },
-    { w: "樹", s: "大____下面好涼爽。" },
-    { w: "葉", s: "樹____跌咗落地。" },
-    { w: "果", s: "我食一個蘋____。" },
-    { w: "米", s: "白____可以煮成飯。" },
-    { w: "肉", s: "超市買牛____。" },
-    { w: "豆", s: "綠____沙好好飲。" },
-    { w: "牛", s: "一隻____喺度行。" },
-    { w: "羊", s: "小____毛茸茸。" },
-    { w: "馬", s: "斑____有黑白紋。" },
-    { w: "雞", s: "母____會生蛋。" },
-    { w: "狗", s: "小____汪汪叫。" },
-    { w: "貓", s: "小____喵喵叫。" },
-    { w: "魚", s: "金____喺水度游。" },
-    { w: "鳥", s: "小____喺天度飛。" },
-    { w: "中", s: "____心有一個點。" },
-    { w: "國", s: "中____係一個大國。" },
-    { w: "香", s: "____水好香。" },
-    { w: "港", s: "香____係我故鄉。" },
-    { w: "出", "____去公園玩。" },
-    { w: "入", s: "請進____房間。" },
-    { w: "開", s: "____門見山。" },
-    { w: "關", s: "記得____燈呀。" },
-    { w: "來", s: "過____我呢度。" },
-    { w: "去", s: "我要____學校。" },
-    { w: "坐", s: "請____喺度等。" },
-    { w: "立", s: "起____行禮。" },
-    { w: "走", s: "路唔好跑，要慢慢____。" },
-    { w: "跑", s: "步____得好快。" },
-    { w: "跳", s: "青蛙____得高。" },
-    { w: "飛", s: "超人識得____。" },
-    { w: "聽", s: "我____到音樂聲。" },
-    { w: "說", s: "說____話要誠實。" },
-    { w: "讀", s: "我____緊小學。" },
-    { w: "寫", s: "我練習____字。" },
-    { w: "看", s: "____電視要休息。" },
-    { w: "見", s: "聽日____喇。" },
-    { w: "早", s: "____晨，爸爸。" },
-    { w: "午", s: "中____要食飯。" },
-    { w: "晚", s: "____安，媽媽。" },
-    { w: "紅", s: "____色係火嘅色。" },
-    { w: "黃", s: "香蕉係____色。" },
-    { w: "藍", s: "____色係天嘅色。" },
-    { w: "綠", s: "草地係____色。" },
-    { w: "白", s: "白____雲飄飄。" },
-    { w: "黑", s: "____色係夜晚。" },
-    { w: "金", s: "____牌得一個。" },
-    { w: "我", s: "____今年六歲。" },
-    { w: "父", s: "父____母愛。" },
-    { w: "母", s: "母____親節。" },
-    { w: "雲", s: "天上有雲____。" },
-    { w: "單", s: "____數定雙數？" },
-    { w: "車", s: "馬路有好多____。" },
-    { w: "休", s: "攰咗就要____息。" },
-    { w: "石", s: "海邊有小____。" },
-    { w: "的", s: "我____書包好重。" },
-    { w: "是", s: "他____我弟弟。" },
-    { w: "球", s: "我鍾意打羽毛____。" },
-    { w: "做", s: "____功課要認真。" },
-    { w: "會", s: "我____識寫字。" },
-    { w: "朋", s: "好朋____，手拉手。" },
-    { w: "們", s: "我____一齊玩。" },
-    { w: "力", s: "我有好大____。" },
-    { w: "玉", s: "____石好靚。" },
-    { w: "犬", s: "小____汪汪叫。" },
-    { w: "王", s: "大____住在城堡。" },
-    { w: "明", s: "____天會更好。" },
-    { w: "古", s: "____代有英雄。" },
-    { w: "衣", s: "著衫____要整齊。" },
-    { w: "弓", s: "奧運有____箭比賽。" },
-    { w: "巾", s: "抹手用手____。" },
-    { w: "地", s: "地____上面有草。" }
-];
-    
-    let currentWord = "", currentMode = 'practice';
+        { w: "一", s: "我有____個蘋果。" }, { w: "二", s: "小貓有____隻耳朵。" }, { w: "三", s: "三角形有____條邊。" },
+        { w: "四", s: "一年有____個季節。" }, { w: "五", s: "一隻手有____隻手指。" }, { w: "六", s: "雪花有____個角。" },
+        { w: "七", s: "一星期有____日。" }, { w: "八", s: "蜘蛛有____條腿。" }, { w: "九", s: "____九八十一。" },
+        { w: "十", s: "我有____隻腳趾。" }, { w: "百", s: "一百分係____分。" }, { w: "千", s: "呢度有____幾個人。" },
+        { w: "上", s: "我坐喺張櫈____面。" }, { w: "下", s: "地____有一粒糖。" }, { w: "左", s: "寫字要用____手或者右手。" },
+        { w: "右", s: "轉____就係超市。" }, { w: "大", s: "倫敦係一個好____嘅城市。" }, { w: "小", s: "芝鼠係一隻好____嘅動物。" },
+        { w: "多", s: "英國有好多____公園。" }, { w: "少", s: "今日好____人出街。" }, { w: "人", s: "我係一個好____。" },
+        { w: "口", s: "我用____嚟食嘢。" }, { w: "手", s: "我拍拍____。" }, { w: "足", s: "我踢足____球。" },
+        { w: "目", s: "我哋要有____標。" }, { w: "耳", s: "我用____聽音樂。" }, { w: "心", s: "我開____咁玩。" },
+        { w: "頭", s: "我戴頂帽喺個____度。" }, { w: "山", s: "我哋去爬____。" }, { w: "水", s: "口渴要飲____。" },
+        { w: "木", s: "張枱係用____整嘅。" }, { w: "禾", s: "田入面有____苗。" }, { w: "土", s: "花盆入面有____。" },
+        { w: "日", s: "今____天氣好好。" }, { w: "月", s: "月亮喺____球上面。" }, { w: "天", s: "____上面有飛機。" },
+        { w: "火", s: "煮飯要用____。" }, { w: "風", s: "秋天啲____好涼。" }, { w: "雨", s: "英國成日落____。" },
+        { w: "電", s: "記得關____燈。" }, { w: "春", s: "____天開好多花。" }, { w: "夏", s: "____天好熱。" },
+        { w: "秋", s: "____天樹葉會變黃。" }, { w: "冬", s: "____天會落雪。" }, { w: "爸", s: "____爸帶我去玩。" },
+        { w: "媽", s: "____媽煮飯好好食。" }, { w: "哥", s: "____哥比我高。" }, { w: "姐", s: "姐____比我大。" },
+        { w: "弟", s: "弟____比我細。" }, { w: "妹", s: "我有一個妹妹____。" }, { w: "男", s: "我是個男____仔。" },
+        { w: "女", s: "她是個女____仔。" }, { w: "老", s: "公公年紀____喇。" }, { w: "少", s: "老____咸宜。" },
+        { w: "師", s: "老____教我寫字。" }, { w: "生", s: "我係一名學____。" }, { w: "友", s: "好朋____一齊玩。" },
+        { w: "公", s: "公____園有草地。" }, { w: "婆", s: "婆____煮湯畀我飲。" }, { w: "校", s: "學____有好多同學。" },
+        { w: "家", s: "我____住喺英國。" }, { w: "門", s: "入屋要開____。" }, { w: "窗", s: "透過____口望出去。" },
+        { w: "床", s: "夜晚喺____度瞓覺。" }, { w: "椅", s: "坐喺櫈____上面。" }, { w: "桌", s: "書____上面有筆。" },
+        { w: "燈", s: "天黑要開____。" }, { w: "筆", s: "我用鉛____寫字。" }, { w: "書", s: "圖書館有好多____。" },
+        { w: "紙", s: "畫畫要用____。" }, { w: "畫", s: "我最鍾意____畫。" }, { w: "歌", s: "一齊唱首歌____。" },
+        { w: "花", s: "花____園開滿花。" }, { w: "草", s: "牛喺草____地食草。" }, { w: "樹", s: "大____下面好涼爽。" },
+        { w: "葉", s: "樹____跌咗落地。" }, { w: "果", s: "我食一個蘋____。" }, { w: "米", s: "白____可以煮成飯。" },
+        { w: "肉", s: "超市買牛____。" }, { w: "豆", s: "綠____沙好好飲。" }, { w: "牛", s: "一隻____喺度行。" },
+        { w: "羊", s: "小____毛茸茸。" }, { w: "馬", s: "斑____有黑白紋。" }, { w: "雞", s: "母____會生蛋。" },
+        { w: "狗", s: "小____汪汪叫。" }, { w: "貓", s: "小____喵喵叫。" }, { w: "魚", s: "金____喺水度游。" },
+        { w: "鳥", s: "小____喺天度飛。" }, { w: "中", s: "____心有一個點。" }, { w: "國", s: "中____係一個大國。" },
+        { w: "香", s: "____水好香。" }, { w: "港", s: "香____係我故鄉。" }, { w: "出", s: "____去公園玩。" },
+        { w: "入", s: "請進____房間。" }, { w: "開", s: "____門見山。" }, { w: "關", s: "記得____燈呀。" },
+        { w: "來", s: "過____我呢度。" }, { w: "去", s: "我要____學校。" }, { w: "坐", s: "請____喺度等。" },
+        { w: "立", s: "起____行禮。" }, { w: "走", s: "路唔好跑，要慢慢____。" }, { w: "跑", s: "步____得好快。" },
+        { w: "跳", s: "青蛙____得高。" }, { w: "飛", s: "超人識得____。" }, { w: "聽", s: "我____到音樂聲。" },
+        { w: "說", s: "說____話要誠實。" }, { w: "讀", s: "我____緊小學。" }, { w: "寫", s: "我練習____字。" },
+        { w: "看", s: "____電視要休息。" }, { w: "見", s: "聽日____喇。" }, { w: "早", s: "____晨，爸爸。" },
+        { w: "午", s: "中____要食飯。" }, { w: "晚", s: "____安，媽媽。" }, { w: "紅", s: "____色係火嘅色。" },
+        { w: "黃", s: "香蕉係____色。" }, { w: "藍", s: "____色係天嘅色。" }, { w: "綠", s: "草地係____色。" },
+        { w: "白", s: "白____雲飄飄。" }, { w: "黑", s: "____色係夜晚。" }, { w: "金", s: "____牌得一個。" },
+        { w: "我", s: "____今年六歲。" }, { w: "父", s: "父____母愛。" }, { w: "母", s: "母____親節。" },
+        { w: "雲", s: "天上有雲____。" }, { w: "單", s: "____數定雙數？" }, { w: "車", s: "馬路有好多____。" },
+        { w: "休", s: "攰咗就要____息。" }, { w: "石", s: "海邊有小____。" }, { w: "的", s: "我____書包好重。" },
+        { w: "是", s: "他____我弟弟。" }, { w: "球", s: "我鍾意打羽毛____。" }, { w: "做", s: "____功課要認真。" },
+        { w: "會", s: "我____識寫字。" }, { w: "朋", s: "好朋____，手拉手。" }, { w: "們", s: "我____一齊玩。" },
+        { w: "力", s: "我有好大____。" }, { w: "玉", s: "____石好靚。" }, { w: "犬", s: "小____汪汪叫。" },
+        { w: "王", s: "大____住在城堡。" }, { w: "明", s: "____天會更好。" }, { w: "古", s: "____代有英雄。" },
+        { w: "衣", s: "著衫____要整齊。" }, { w: "弓", s: "奧運有____箭比賽。" }, { w: "巾", s: "抹手用手____。" },
+        { w: "地", s: "地____上面有草。" }
+    ];
+
+    let currentWord = "", currentMode = 'practice', currentSentence = "";
     let practiceCorrect = 0, dictationCorrect = 0, isHintRevealed = false;
-    let streak = 0, xp = 0, level = 1;
-    let isXpAwarded = false; // 紀錄呢個字加咗分未
+    let streak = 0, xp = 0, level = 1, isXpAwarded = false;
 
     const kaitiFont = '"Kaiti TC", "STKaiti", "BiauKai", "楷體", sans-serif';
     const tCanvas = document.getElementById('templateCanvas'), dCanvas = document.getElementById('drawCanvas');
     const tCtx = tCanvas.getContext('2d'), dCtx = dCanvas.getContext('2d');
     let drawing = false;
 
-    function safeUpdateText(id, text) {
-        const el = document.getElementById(id);
-        if (el) el.innerText = text;
-    }
+    function safeUpdateText(id, text) { const el = document.getElementById(id); if (el) el.innerText = text; }
 
     function initHero() {
         const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
@@ -323,188 +201,126 @@
         currentXP += amount;
         localStorage.setItem('jovan_total_xp', currentXP);
         safeUpdateText('display-xp', currentXP);
-
         const msg = document.createElement('div');
         msg.innerText = `+${amount} XP!`;
         msg.style = "position:fixed; top:40%; left:50%; transform:translateX(-50%); font-size:4em; color:#55FF55; text-shadow:3px 3px #000; z-index:9999; pointer-events:none; animation: fadeUp 1.5s forwards;";
         document.body.appendChild(msg);
         setTimeout(() => msg.remove(), 1500);
-
-        try {
-            await setDoc(doc(db, "leaderboard", heroName), {
-                name: heroName, xp: currentXP, lastUpdate: new Date()
-            }, { merge: true });
-        } catch (e) { console.error("Cloud Sync Error:", e); }
+        try { await setDoc(doc(db, "leaderboard", heroName), { name: heroName, xp: currentXP, lastUpdate: new Date() }, { merge: true }); } 
+        catch (e) { console.error("Cloud Sync Error:", e); }
     }
 
-    window.toggleTooltip = function() {
-        const content = document.getElementById('tooltip-content');
-        if(content) content.style.display = (content.style.display === 'block') ? 'none' : 'block';
-    };
-
+    window.toggleTooltip = function() { const content = document.getElementById('tooltip-content'); if(content) content.style.display = (content.style.display === 'block') ? 'none' : 'block'; };
     window.setMode = function(mode) { currentMode = mode; initGame(); };
     
     window.speakWord = function() { 
         if (!currentWord) return;
-        window.speechSynthesis.cancel(); // 先清空
-    
-        // 先讀字，再讀句子
+        window.speechSynthesis.cancel();
         const textToSpeak = currentMode === 'dictation' ? `${currentWord}。句子係：${currentSentence}` : currentWord;
-        
         const msg = new SpeechSynthesisUtterance(textToSpeak);
-        msg.lang = 'zh-HK';
-        msg.rate = 0.7;
+        msg.lang = 'zh-HK'; msg.rate = 0.7;
         window.speechSynthesis.speak(msg); 
     };
-    
+
     window.revealHint = function() { 
         if (currentMode === 'dictation') { 
             document.getElementById('targetWord').innerText = currentWord; 
             document.getElementById('targetWord').style.color = "#FFFF55"; 
-            isHintRevealed = true;
-            streak = 0; updateComboUI();
+            isHintRevealed = true; streak = 0; updateComboUI();
         } 
     };
 
-// 定義一個變數儲存當前例句
-let currentSentence = "";
-
-window.initGame = function() {
-    initHero();
-    isXpAwarded = false;
-    
-    // 隨機抽取一個對象
-    const currentData = wordBank[Math.floor(Math.random() * wordBank.length)];
-    currentWord = currentData.w;
-    currentSentence = currentData.s; // 儲存例句
-    
-    isHintRevealed = false;
-    const targetWordEl = document.getElementById('targetWord');
-    const tCanvasEl = document.getElementById('templateCanvas');
-
-    if (currentMode === 'dictation') {
-        targetWordEl.innerText = "???";
-        tCanvasEl.style.opacity = "0";
-        // 喺聽默模式，將訊息顯示為例句提示
-        safeUpdateText('message', `提示句：${currentSentence}`);
-        safeUpdateText('promptText', "聽音默寫：");
-    } else {
-        targetWordEl.innerText = currentWord;
-        tCanvasEl.style.opacity = "0.15";
-        safeUpdateText('message', "練習模式，加油！");
-        safeUpdateText('promptText', "請寫出：");
-    }
-    
-    tCtx.clearRect(0, 0, 320, 320);
-    tCtx.fillStyle = "#cccccc";
-    tCtx.font = "220px " + kaitiFont;
-    tCtx.textAlign = "center";
-    tCtx.textBaseline = "middle";
-    tCtx.fillText(currentWord, 160, 165);
-    
-    clearCanvas();
-    setupDrawing();
-};
+    window.initGame = function() {
+        initHero();
+        isXpAwarded = false;
+        const currentData = wordBank[Math.floor(Math.random() * wordBank.length)];
+        currentWord = currentData.w;
+        currentSentence = currentData.s;
+        isHintRevealed = false;
+        const targetWordEl = document.getElementById('targetWord');
+        const tCanvasEl = document.getElementById('templateCanvas');
+        if (currentMode === 'dictation') {
+            targetWordEl.innerText = "???"; tCanvasEl.style.opacity = "0";
+            safeUpdateText('message', `提示句：${currentSentence}`);
+            safeUpdateText('promptText', "聽音默寫：");
+        } else {
+            targetWordEl.innerText = currentWord; tCanvasEl.style.opacity = "0.15";
+            safeUpdateText('message', "練習模式，加油！");
+            safeUpdateText('promptText', "請寫出：");
+        }
+        tCtx.clearRect(0, 0, 320, 320); tCtx.fillStyle = "#cccccc"; tCtx.font = "220px " + kaitiFont; tCtx.textAlign = "center"; tCtx.textBaseline = "middle"; tCtx.fillText(currentWord, 160, 165);
+        clearCanvas(); setupDrawing();
+    };
 
     window.clearCanvas = function() { 
         dCtx.clearRect(0, 0, 320, 320); 
         const reward = document.getElementById('steve-reward');
         if(reward) reward.classList.remove('show-steve'); 
     };
-    
-window.checkWriting = function() {
-    const tD = tCtx.getImageData(0, 0, 320, 320).data;
-    const dD = dCtx.getImageData(0, 0, 320, 320).data;
-    
-    // 1. 助手函數：搵出邊界並計算實際像素總數
-    function getBounds(data) {
-        let minX = 320, minY = 320, maxX = 0, maxY = 0, pCount = 0;
-        let found = false;
-        for (let y = 0; y < 320; y++) {
-            for (let x = 0; x < 320; x++) {
-                if (data[(y * 320 + x) * 4 + 3] > 20) {
-                    if (x < minX) minX = x; if (x > maxX) maxX = x;
-                    if (y < minY) minY = y; if (y > maxY) maxY = y;
-                    found = true; pCount++;
+
+    window.checkWriting = function() {
+        const tD = tCtx.getImageData(0, 0, 320, 320).data;
+        const dD = dCtx.getImageData(0, 0, 320, 320).data;
+        function getBounds(data) {
+            let minX = 320, minY = 320, maxX = 0, maxY = 0, pCount = 0;
+            let found = false;
+            for (let y = 0; y < 320; y++) {
+                for (let x = 0; x < 320; x++) {
+                    if (data[(y * 320 + x) * 4 + 3] > 20) {
+                        if (x < minX) minX = x; if (x > maxX) maxX = x;
+                        if (y < minY) minY = y; if (y > maxY) maxY = y;
+                        found = true; pCount++;
+                    }
                 }
             }
+            return found ? { x: minX, y: minY, w: maxX - minX, h: maxY - minY, pCount: pCount } : null;
         }
-        return found ? { x: minX, y: minY, w: maxX - minX, h: maxY - minY, pCount: pCount } : null;
-    }
-
-    const tBounds = getBounds(tD);
-    const dBounds = getBounds(dD);
-
-    if (!dBounds) { safeUpdateText('message', "你仲未寫字喎！"); return; }
-
-    const gridSize = 50;
-    let matches = 0, totalT = 0, extraPixels = 0;
-
-    for (let gy = 0; gy < gridSize; gy++) {
-        for (let gx = 0; gx < gridSize; gx++) {
-            const tx = tBounds.x + Math.floor(gx * tBounds.w / gridSize);
-            const ty = tBounds.y + Math.floor(gy * tBounds.h / gridSize);
-            const dx = dBounds.x + Math.floor(gx * dBounds.w / gridSize);
-            const dy = dBounds.y + Math.floor(gy * dBounds.h / gridSize);
-
-            const isT = tD[(ty * 320 + tx) * 4 + 3] > 20;
-            const isD = dD[(dy * 320 + dx) * 4 + 3] > 20;
-
-            if (isT) { totalT++; if (isD) matches++; }
-            else if (isD) { extraPixels++; }
-        }
-    }
-
-    // 2. 結構與密度運算
-    const matchScore = (matches / totalT) * 100;
-    const dDensity = dBounds.pCount / (dBounds.w * dBounds.h);
-    
-    // 判定是否塗黑：密度高過 65% 直接攔截
-    const isScribble = dDensity > 0.65;
-
-    // 懲罰系數保持寬容 (0.35)
-    const penalty = (extraPixels / (gridSize * gridSize - totalT)) * 100 * 0.35;
-    
-    const finalScore = Math.max(0, Math.round(matchScore - penalty));
-
-    // --- 門檻微調 (練習 50% / 聽默 35%) ---
-    const threshold = (currentMode === 'dictation') ? 35 : 50;
-    
-    
-
-    // 3. 遊戲判定邏輯
-    if (finalScore >= threshold && !isScribble) {
-        safeUpdateText('message', `結構好準！${finalScore}% 相似！💎`);
-        document.getElementById('steve-reward').classList.add('show-steve');
-        
-        if (!isXpAwarded) {
-            if (currentMode === 'dictation') {
-                if (!isHintRevealed) {
-                    dictationCorrect++; safeUpdateText('dictationCount', dictationCorrect);
-                    streak++; addGlobalXP(3); 
-                } else { streak = 0; }
-            } else {
-                practiceCorrect++; safeUpdateText('practiceCount', practiceCorrect);
-                streak = 0; addGlobalXP(1); 
+        const tBounds = getBounds(tD);
+        const dBounds = getBounds(dD);
+        if (!dBounds) { safeUpdateText('message', "你仲未寫字喎！"); return; }
+        const gridSize = 50;
+        let matches = 0, totalT = 0, extraPixels = 0;
+        for (let gy = 0; gy < gridSize; gy++) {
+            for (let gx = 0; gx < gridSize; gx++) {
+                const tx = tBounds.x + Math.floor(gx * tBounds.w / gridSize);
+                const ty = tBounds.y + Math.floor(gy * tBounds.h / gridSize);
+                const dx = dBounds.x + Math.floor(gx * dBounds.w / gridSize);
+                const dy = dBounds.y + Math.floor(gy * dBounds.h / gridSize);
+                const isT = tD[(ty * 320 + tx) * 4 + 3] > 20;
+                const isD = dD[(dy * 320 + dx) * 4 + 3] > 20;
+                if (isT) { totalT++; if (isD) matches++; }
+                else if (isD) { extraPixels++; }
             }
-            xp += 20;
-            if (xp >= 100) { level++; xp = 0; safeUpdateText('xp-text', "LEVEL UP!"); }
-            isXpAwarded = true;
         }
-        updateXPUI(); updateComboUI();
-        if (streak >= 5) triggerTNT();
-        speakWord();
-        setTimeout(() => { if(confirm("大勝利！下一個？")) initGame(); }, 1200);
-    } else {
-        if (isScribble) {
-            safeUpdateText('message', `唔好塗黑呀！要寫出字嘅形狀！`);
+        const matchScore = (matches / totalT) * 100;
+        const dDensity = dBounds.pCount / (dBounds.w * dBounds.h);
+        const isScribble = dDensity > 0.65;
+        const penalty = (extraPixels / (gridSize * gridSize - totalT)) * 100 * 0.35;
+        const finalScore = Math.max(0, Math.round(matchScore - penalty));
+        const threshold = (currentMode === 'dictation') ? 35 : 50;
+
+        if (finalScore >= threshold && !isScribble) {
+            safeUpdateText('message', `結構好準！${finalScore}% 相似！💎`);
+            document.getElementById('steve-reward').classList.add('show-steve');
+            if (!isXpAwarded) {
+                if (currentMode === 'dictation') {
+                    if (!isHintRevealed) { dictationCorrect++; safeUpdateText('dictationCount', dictationCorrect); streak++; addGlobalXP(3); } 
+                    else { streak = 0; }
+                } else { practiceCorrect++; safeUpdateText('practiceCount', practiceCorrect); streak = 0; addGlobalXP(1); }
+                xp += 20; if (xp >= 100) { level++; xp = 0; safeUpdateText('xp-text', "LEVEL UP!"); }
+                isXpAwarded = true;
+            }
+            updateXPUI(); updateComboUI();
+            if (streak >= 5) triggerTNT();
+            speakWord();
+            setTimeout(() => { if(confirm("大勝利！下一個？")) initGame(); }, 1200);
         } else {
-            safeUpdateText('message', `得 ${finalScore}%... 再試下寫好啲！`);
+            if (isScribble) safeUpdateText('message', `唔好塗黑呀！要寫出字嘅形狀！`);
+            else safeUpdateText('message', `得 ${finalScore}%... 再試下寫好啲！`);
+            streak = 0; updateComboUI();
         }
-        streak = 0; updateComboUI();
-    }
-};
-    
+    };
+
     function setupDrawing() {
         dCtx.strokeStyle = "#222"; dCtx.lineWidth = 18; dCtx.lineCap = "round"; dCtx.lineJoin = "round";
         const getPos = (e) => {
@@ -528,15 +344,14 @@ window.checkWriting = function() {
     function triggerTNT() {
         const tnt = document.getElementById('tntImg'); if(tnt) tnt.classList.add('exploding');
         safeUpdateText('message', "💥 BOOM! 5-COMBO 獎勵！ 💥");
-        spawnDiamonds(); addGlobalXP(5); // TNT +5
+        spawnDiamonds(); addGlobalXP(5);
         setTimeout(() => { if(tnt) tnt.classList.remove('exploding'); streak = 0; updateComboUI(); }, 1000);
     }
     function spawnDiamonds() {
         for (let i = 0; i < 30; i++) {
             setTimeout(() => {
                 const d = document.createElement('div');
-                d.innerHTML = "💎"; d.style.position = "fixed"; d.style.top = "-50px";
-                d.style.left = Math.random() * 100 + "vw"; d.style.fontSize = "30px";
+                d.innerHTML = "💎"; d.style.position = "fixed"; d.style.top = "-50px"; d.style.left = Math.random() * 100 + "vw"; d.style.fontSize = "30px";
                 d.style.zIndex = "3000"; d.style.transition = "transform 2s linear, opacity 2s";
                 document.body.appendChild(d);
                 setTimeout(() => { d.style.transform = "translateY(110vh) rotate(360deg)"; d.style.opacity = "0"; }, 100);
@@ -544,7 +359,8 @@ window.checkWriting = function() {
             }, i * 100);
         }
     }
-    window.onload = initGame;
+    // 改用呢個方式啟動，保證 Module 載入後即刻執行
+    initGame();
 </script>
 </body>
 </html>
