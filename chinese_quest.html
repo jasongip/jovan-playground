@@ -147,8 +147,154 @@
 <script type="module">
     import { db, doc, setDoc } from './firebase-config.js';
 
-    const wordBank = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "上", "下", "左", "右", "大", "小", "多", "少", "人", "口", "手", "足", "目", "耳", "心", "頭", "山", "水", "木", "禾", "土", "日", "月", "天", "火", "風", "雨", "電", "春", "夏", "秋", "冬", "爸", "媽", "哥", "姐", "弟", "妹", "男", "女", "老", "少", "師", "生", "友", "公", "婆", "校", "家", "門", "窗", "床", "椅", "桌", "燈", "筆", "書", "紙", "畫", "歌", "花", "草", "樹", "葉", "果", "米", "肉", "豆", "牛", "羊", "馬", "雞", "狗", "貓", "魚", "鳥", "中", "國", "香", "港", "出", "入", "開", "關", "來", "去", "坐", "立", "走", "跑", "跳", "飛", "聽", "說", "讀", "寫", "看", "見", "早", "午", "晚", "紅", "黃", "藍", "綠", "白", "黑", "金", "我", "父", "母", "雲", "單", "車", "休", "石", "的", "是", "球", "做", "會", "朋", "們", "力", "玉", "犬", "王", "明", "古", "衣", "弓", "巾", "地"];
-
+    const wordBank = [
+    { w: "一", s: "我有____個蘋果。" },
+    { w: "二", s: "小貓有____隻耳朵。" },
+    { w: "三", s: "三角形有____條邊。" },
+    { w: "四", s: "一年有____個季節。" },
+    { w: "五", s: "一隻手有____隻手指。" },
+    { w: "六", s: "雪花有____個角。" },
+    { w: "七", s: "一星期有____日。" },
+    { w: "八", s: "蜘蛛有____條腿。" },
+    { w: "九", s: "____九八十一。" },
+    { w: "十", s: "我有____隻腳趾。" },
+    { w: "百", s: "一百分係____分。" },
+    { w: "千", s: "呢度有____幾個人。" },
+    { w: "上", s: "我坐喺張櫈____面。" },
+    { w: "下", s: "地____有一粒糖。" },
+    { w: "左", s: "寫字要用____手或者右手。" },
+    { w: "右", s: "轉____就係超市。" },
+    { w: "大", s: "倫敦係一個好____嘅城市。" },
+    { w: "小", s: "芝鼠係一隻好____嘅動物。" },
+    { w: "多", s: "英國有好多____公園。" },
+    { w: "少", s: "今日好____人出街。" },
+    { w: "人", s: "我係一個好____。" },
+    { w: "口", s: "我用____嚟食嘢。" },
+    { w: "手", s: "我拍拍____。" },
+    { w: "足", s: "我踢足____球。" },
+    { w: "目", s: "我哋要有____標。" },
+    { w: "耳", s: "我用____聽音樂。" },
+    { w: "心", s: "我開____咁玩。" },
+    { w: "頭", s: "我戴頂帽喺個____度。" },
+    { w: "山", s: "我哋去爬____。" },
+    { w: "水", s: "口渴要飲____。" },
+    { w: "木", s: "張枱係用____整嘅。" },
+    { w: "禾", s: "田入面有____苗。" },
+    { w: "土", s: "花盆入面有____。" },
+    { w: "日", s: "今____天氣好好。" },
+    { w: "月", s: "月亮喺____球上面。" },
+    { w: "天", s: "____上面有飛機。" },
+    { w: "火", s: "煮飯要用____。" },
+    { w: "風", s: "秋天啲____好涼。" },
+    { w: "雨", s: "英國成日落____。" },
+    { w: "電", s: "記得關____燈。" },
+    { w: "春", s: "____天開好多花。" },
+    { w: "夏", s: "____天好熱。" },
+    { w: "秋", s: "____天樹葉會變黃。" },
+    { w: "冬", s: "____天會落雪。" },
+    { w: "爸", s: "____爸帶我去玩。" },
+    { w: "媽", s: "____媽煮飯好好食。" },
+    { w: "哥", s: "____哥比我高。" },
+    { w: "姐", s: "姐____比我大。" },
+    { w: "弟", s: "弟____比我細。" },
+    { w: "妹", s: "我有一個妹妹____。" },
+    { w: "男", s: "我是個男____仔。" },
+    { w: "女", s: "她是個女____仔。" },
+    { w: "老", s: "公公年紀____喇。" },
+    { w: "少", s: "老____咸宜。" },
+    { w: "師", s: "老____教我寫字。" },
+    { w: "生", s: "我係一名學____。" },
+    { w: "友", s: "好朋____一齊玩。" },
+    { w: "公", s: "公____園有草地。" },
+    { w: "婆", s: "婆____煮湯畀我飲。" },
+    { w: "校", s: "學____有好多同學。" },
+    { w: "家", s: "我____住喺英國。" },
+    { w: "門", s: "入屋要開____。" },
+    { w: "窗", s: "透過____口望出去。" },
+    { w: "床", s: "夜晚喺____度瞓覺。" },
+    { w: "椅", s: "坐喺櫈____上面。" },
+    { w: "桌", s: "書____上面有筆。" },
+    { w: "燈", s: "天黑要開____。" },
+    { w: "筆", s: "我用鉛____寫字。" },
+    { w: "書", s: "圖書館有好多____。" },
+    { w: "紙", s: "畫畫要用____。" },
+    { w: "畫", s: "我最鍾意____畫。" },
+    { w: "歌", s: "一齊唱首歌____。" },
+    { w: "花", s: "花____園開滿花。" },
+    { w: "草", s: "牛喺草____地食草。" },
+    { w: "樹", s: "大____下面好涼爽。" },
+    { w: "葉", s: "樹____跌咗落地。" },
+    { w: "果", s: "我食一個蘋____。" },
+    { w: "米", s: "白____可以煮成飯。" },
+    { w: "肉", s: "超市買牛____。" },
+    { w: "豆", s: "綠____沙好好飲。" },
+    { w: "牛", s: "一隻____喺度行。" },
+    { w: "羊", s: "小____毛茸茸。" },
+    { w: "馬", s: "斑____有黑白紋。" },
+    { w: "雞", s: "母____會生蛋。" },
+    { w: "狗", s: "小____汪汪叫。" },
+    { w: "貓", s: "小____喵喵叫。" },
+    { w: "魚", s: "金____喺水度游。" },
+    { w: "鳥", s: "小____喺天度飛。" },
+    { w: "中", s: "____心有一個點。" },
+    { w: "國", s: "中____係一個大國。" },
+    { w: "香", s: "____水好香。" },
+    { w: "港", s: "香____係我故鄉。" },
+    { w: "出", "____去公園玩。" },
+    { w: "入", s: "請進____房間。" },
+    { w: "開", s: "____門見山。" },
+    { w: "關", s: "記得____燈呀。" },
+    { w: "來", s: "過____我呢度。" },
+    { w: "去", s: "我要____學校。" },
+    { w: "坐", s: "請____喺度等。" },
+    { w: "立", s: "起____行禮。" },
+    { w: "走", s: "路唔好跑，要慢慢____。" },
+    { w: "跑", s: "步____得好快。" },
+    { w: "跳", s: "青蛙____得高。" },
+    { w: "飛", s: "超人識得____。" },
+    { w: "聽", s: "我____到音樂聲。" },
+    { w: "說", s: "說____話要誠實。" },
+    { w: "讀", s: "我____緊小學。" },
+    { w: "寫", s: "我練習____字。" },
+    { w: "看", s: "____電視要休息。" },
+    { w: "見", s: "聽日____喇。" },
+    { w: "早", s: "____晨，爸爸。" },
+    { w: "午", s: "中____要食飯。" },
+    { w: "晚", s: "____安，媽媽。" },
+    { w: "紅", s: "____色係火嘅色。" },
+    { w: "黃", s: "香蕉係____色。" },
+    { w: "藍", s: "____色係天嘅色。" },
+    { w: "綠", s: "草地係____色。" },
+    { w: "白", s: "白____雲飄飄。" },
+    { w: "黑", s: "____色係夜晚。" },
+    { w: "金", s: "____牌得一個。" },
+    { w: "我", s: "____今年六歲。" },
+    { w: "父", s: "父____母愛。" },
+    { w: "母", s: "母____親節。" },
+    { w: "雲", s: "天上有雲____。" },
+    { w: "單", s: "____數定雙數？" },
+    { w: "車", s: "馬路有好多____。" },
+    { w: "休", s: "攰咗就要____息。" },
+    { w: "石", s: "海邊有小____。" },
+    { w: "的", s: "我____書包好重。" },
+    { w: "是", s: "他____我弟弟。" },
+    { w: "球", s: "我鍾意打羽毛____。" },
+    { w: "做", s: "____功課要認真。" },
+    { w: "會", s: "我____識寫字。" },
+    { w: "朋", s: "好朋____，手拉手。" },
+    { w: "們", s: "我____一齊玩。" },
+    { w: "力", s: "我有好大____。" },
+    { w: "玉", s: "____石好靚。" },
+    { w: "犬", s: "小____汪汪叫。" },
+    { w: "王", s: "大____住在城堡。" },
+    { w: "明", s: "____天會更好。" },
+    { w: "古", s: "____代有英雄。" },
+    { w: "衣", s: "著衫____要整齊。" },
+    { w: "弓", s: "奧運有____箭比賽。" },
+    { w: "巾", s: "抹手用手____。" },
+    { w: "地", s: "地____上面有草。" }
+];
+    
     let currentWord = "", currentMode = 'practice';
     let practiceCorrect = 0, dictationCorrect = 0, isHintRevealed = false;
     let streak = 0, xp = 0, level = 1;
@@ -199,9 +345,15 @@
     window.setMode = function(mode) { currentMode = mode; initGame(); };
     
     window.speakWord = function() { 
-        if (!currentWord) return; 
-        const msg = new SpeechSynthesisUtterance(currentWord); 
-        msg.lang = 'zh-HK'; msg.rate = 0.7; 
+        if (!currentWord) return;
+        window.speechSynthesis.cancel(); // 先清空
+    
+        // 先讀字，再讀句子
+        const textToSpeak = currentMode === 'dictation' ? `${currentWord}。句子係：${currentSentence}` : currentWord;
+        
+        const msg = new SpeechSynthesisUtterance(textToSpeak);
+        msg.lang = 'zh-HK';
+        msg.rate = 0.7;
         window.speechSynthesis.speak(msg); 
     };
     
@@ -214,25 +366,45 @@
         } 
     };
 
-    window.initGame = function() {
-        initHero();
-        isXpAwarded = false; // 重要：換新字，重設獎勵鎖
-        currentWord = wordBank[Math.floor(Math.random() * wordBank.length)];
-        isHintRevealed = false;
-        const targetWordEl = document.getElementById('targetWord');
-        const tCanvasEl = document.getElementById('templateCanvas');
-        if (currentMode === 'dictation') {
-            targetWordEl.innerText = "???"; tCanvasEl.style.opacity = "0"; 
-            safeUpdateText('promptText', "聽音默寫：");
-            safeUpdateText('message', "睇咗提示唔計分同斷 Combo 㗎！");
-        } else {
-            targetWordEl.innerText = currentWord; tCanvasEl.style.opacity = "0.15"; 
-            safeUpdateText('promptText', "請寫出：");
-            safeUpdateText('message', "練習模式，加油！");
-        }
-        tCtx.clearRect(0, 0, 320, 320); tCtx.fillStyle = "#cccccc"; tCtx.font = "220px " + kaitiFont; tCtx.textAlign = "center"; tCtx.textBaseline = "middle"; tCtx.fillText(currentWord, 160, 165);
-        clearCanvas(); setupDrawing();
-    };
+// 定義一個變數儲存當前例句
+let currentSentence = "";
+
+window.initGame = function() {
+    initHero();
+    isXpAwarded = false;
+    
+    // 隨機抽取一個對象
+    const currentData = wordBank[Math.floor(Math.random() * wordBank.length)];
+    currentWord = currentData.w;
+    currentSentence = currentData.s; // 儲存例句
+    
+    isHintRevealed = false;
+    const targetWordEl = document.getElementById('targetWord');
+    const tCanvasEl = document.getElementById('templateCanvas');
+
+    if (currentMode === 'dictation') {
+        targetWordEl.innerText = "???";
+        tCanvasEl.style.opacity = "0";
+        // 喺聽默模式，將訊息顯示為例句提示
+        safeUpdateText('message', `提示句：${currentSentence}`);
+        safeUpdateText('promptText', "聽音默寫：");
+    } else {
+        targetWordEl.innerText = currentWord;
+        tCanvasEl.style.opacity = "0.15";
+        safeUpdateText('message', "練習模式，加油！");
+        safeUpdateText('promptText', "請寫出：");
+    }
+    
+    tCtx.clearRect(0, 0, 320, 320);
+    tCtx.fillStyle = "#cccccc";
+    tCtx.font = "220px " + kaitiFont;
+    tCtx.textAlign = "center";
+    tCtx.textBaseline = "middle";
+    tCtx.fillText(currentWord, 160, 165);
+    
+    clearCanvas();
+    setupDrawing();
+};
 
     window.clearCanvas = function() { 
         dCtx.clearRect(0, 0, 320, 320); 
