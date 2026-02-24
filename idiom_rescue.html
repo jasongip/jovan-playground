@@ -116,15 +116,15 @@
 
         const idiomDB = [
             { word: "一五一十", hint: "豬仔想聽你講得清清楚楚！" }, { word: "一心一意", hint: "羊仔想你專心救佢！" },
-            { word: "三心二意", hint: "唔好諗住玩 Minecraft 呀，專心啲！" }, { word: "四通八達", hint: "呢條路好似礦坑咁周圍都去到。" },
+            { word: "三心兩意", hint: "唔好諗住玩 Minecraft 呀，專心啲！" }, { word: "四通八達", hint: "呢條路好似礦坑咁周圍都去到。" },
             { word: "五光十色", hint: "牛牛鍾意彩色嘅世界！" }, { word: "六神無主", hint: "小雞嚇到唔知去咗邊！" },
-            { word: "七上八下", hint: "救唔到狐狸仔，心跳得好快！" }, { word: "八仙過海", hint: "大家一齊用超能力救動物！" },
+            { word: "七上八落", hint: "救唔到狐狸仔，心跳得好快！" }, { word: "八仙過海", hint: "大家一齊用超能力救動物！" },
             { word: "九牛一毛", hint: "救一隻牛牛只係好小事！" }, { word: "十全十美", hint: "救晒所有動物就最完美喇！" },
             { word: "百發百中", hint: "好似用弓箭射中靶心咁準！" }, { word: "千變萬化", hint: "呢個地圖好神祕，成日變！" },
             { word: "馬到功成", hint: "馬仔祝你一試就成功！" }, { word: "亡羊補牢", hint: "羊仔走咗？快啲整返好個欄啦！" },
             { word: "龍飛鳳舞", hint: "啲字寫得好靚，好似龍喺度飛！" }, { word: "虎頭蛇尾", hint: "救動物要救到底，唔好半途而廢！" },
             { word: "狐假虎威", hint: "小狐狸想扮老虎去嚇人！" }, { word: "狼吞虎嚥", hint: "餓咗好耐嘅狼仔喺度大口食嘢！" },
-            { word: "雞飛狗跳", hint: "農場發生咗咩事？咁嘈嘅！" }, { word: "井底之蛙", hint: "青蛙仔想跳出個井睇世界！" },
+            { word: "雞飛狗走", hint: "農場發生咗咩事？咁嘈嘅！" }, { word: "井底之蛙", hint: "青蛙仔想跳出個井睇世界！" },
             { word: "守株待兔", hint: "兔仔唔會自己撞埋嚟㗎，快啲救佢！" }, { word: "畫龍點睛", hint: "最後一筆寫啱，龍就飛出嚟！" },
             { word: "風和日麗", hint: "今日天氣好好，最啱去探險！" }, { word: "陽光燦爛", hint: "太陽伯伯出咗嚟，唔驚 Creeper 喇！" },
             { word: "春暖花開", hint: "春天到咗，花園啲花開晒喇！" }, { word: "烈日當空", hint: "好熱呀，快啲救牛牛去陰涼處！" },
@@ -169,7 +169,8 @@
 
         const animalIcons = ["🐷", "🐑", "🐮", "🐔", "🐱", "🐶", "🦊", "🐰", "🐼", "🐨", "🐸", "🐵"];
         let currentIdiom = "", userAns = [], savedAnimals = [], idiomsSolvedInSession = 0, currentAnimal = "";
-
+        let idiomUtterance = null;
+        
         // 防禦機制let currentIdiom = "", userAns = [], savedAnimals = [], idiomsSolvedInSession = 0, currentAnimal = "";
         let isCurrentIdiomLocked = false; // 呢關攞咗分就變 true，鎖死重試同擺字
     
@@ -322,10 +323,27 @@
             }
         }
     
-        window.speakIdiom = function() {
-            const m = new SpeechSynthesisUtterance(currentIdiom);
-            m.lang = 'zh-HK'; m.rate = 0.7; window.speechSynthesis.speak(m);
-        }
+    window.speakIdiom = function() {
+        if (!currentIdiom) return;
+    
+        // 1. 先強制停止之前所有未讀完嘅聲，清空隊列
+        window.speechSynthesis.cancel();
+    
+        // 2. 建立新嘅語音物件，並確保 currentIdiom 係乾淨嘅 4 個字
+        // 用 .trim() 確保冇多餘空格
+        idiomUtterance = new SpeechSynthesisUtterance(currentIdiom.trim());
+        
+        // 3. 設定廣東話
+        idiomUtterance.lang = 'zh-HK';
+        idiomUtterance.rate = 0.7; // 慢啲等 Jovan 聽得清楚啲
+        idiomUtterance.pitch = 1.0;
+    
+        // 4. 執行朗讀
+        window.speechSynthesis.speak(idiomUtterance);
+        
+        // Debug 用：如果仲係讀錯，可以喺 Console 睇吓讀緊乜
+        console.log("Speaking Idiom:", currentIdiom);
+    };
     
         window.onload = initRescueSession;
     </script>
