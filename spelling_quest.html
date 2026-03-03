@@ -228,7 +228,7 @@
         document.getElementById('nextBtn').style.display = 'inline-block';
         addGlobalXP(2);
         
-        const winMsg = new SpeechSynthesisUtterance(`Excellent spelling, ${heroName}! You are a true hero.`);
+        const winMsg = new SpeechSynthesisUtterance(`Excellent spelling, ${heroName}!`);
         winMsg.lang = 'en-GB';
         winMsg.rate = 0.9;
         window.speechSynthesis.speak(winMsg);
