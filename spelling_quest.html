@@ -119,27 +119,27 @@
 <script type="module">
     import { db, doc, setDoc } from './firebase-config.js';
 
-    // 英國生活化詞庫
+    // 整合 Oxford Year 1 & 2 Common Exception Words
     const wordBank = [
-        "APPLE", "WATER", "BREAD", "HOUSE", "SCHOOL", "TRAIN", "LONDON", 
-        "CHEESE", "GREEN", "HELLO", "PIZZA", "FAMILY", "BANANA", "FLOWER"
+        // Year 1
+        "THE", "A", "DO", "TO", "TODAY", "OF", "SAID", "SAYS", "ARE", "WERE", "WAS", "IS", "HIS", "HAS", "I", "YOU", "YOUR", "THEY", "BE", "HE", "ME", "SHE", "WE", "NO", "GO", "SO", "BY", "MY", "HERE", "THERE", "WHERE", "LOVE", "COME", "SOME", "ONE", "ONCE", "ASK", "FRIEND", "SCHOOL", "PUT", "PUSH", "PULL", "FULL", "HOUSE", "OUR",
+        // Year 2
+        "EVERYBODY", "EVEN", "GREAT", "BREAK", "STEAK", "PRETTY", "BEAUTIFUL", "AFTER", "FAST", "LAST", "PAST", "FATHER", "CLASS", "GRASS", "PASS", "PLANT", "PATH", "BATH", "HOUR", "MOVE", "PROVE", "IMPROVE", "SURE", "SUGAR", "EYE", "COULD", "SHOULD", "WOULD", "WHO", "WHOLE", "ANY", "MANY", "CLOTHES", "BUSY", "PEOPLE", "WATER", "AGAIN", "HALF", "MONEY", "MR", "MRS", "PARENTS", "DOOR", "FLOOR", "POOR", "BECAUSE", "FIND", "KIND", "MIND", "BEHIND", "CHILD", "CHILDREN", "WILD", "CLIMB", "MOST", "ONLY", "BOTH", "OLD", "COLD", "GOLD", "HOLD", "TOLD", "EVERY"
     ];
 
     let currentWord = "";
     let guessedLetters = [];
-    let wrongCount = 0;
-    const keyboardRows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+    let heroName = "Mystery Explorer"; // 預設名
 
     function initHero() {
-        const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+        heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
         const globalXp = localStorage.getItem('jovan_total_xp') || 0;
-        document.getElementById('hero-name').innerText = name;
+        document.getElementById('hero-name').innerText = heroName;
         document.getElementById('display-xp').innerText = globalXp;
     }
 
     async function addGlobalXP(amount) {
         let currentXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
-        let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
         currentXP += amount;
         localStorage.setItem('jovan_total_xp', currentXP);
         document.getElementById('display-xp').innerText = currentXP;
@@ -152,11 +152,11 @@
 
     window.initGame = function() {
         initHero();
-        currentWord = wordBank[Math.floor(Math.random() * wordBank.length)];
+        // 隨機揀字並轉做大寫
+        currentWord = wordBank[Math.floor(Math.random() * wordBank.length)].toUpperCase();
         guessedLetters = [];
-        wrongCount = 0;
         document.getElementById('nextBtn').style.display = 'none';
-        document.getElementById('message').innerText = "Guess the letters!";
+        document.getElementById('message').innerText = "Guess the tricky word!";
         document.getElementById('diamond').classList.remove('active-diamond');
         renderKeyboard();
         updateDisplay();
@@ -164,6 +164,7 @@
     }
 
     function renderKeyboard() {
+        const keyboardRows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
         const kb = document.getElementById('keyboard');
         kb.innerHTML = keyboardRows.map(row => `
             <div class="key-row">
@@ -175,7 +176,9 @@
     }
 
     function updateDisplay() {
-        const display = currentWord.split('').map(char => guessedLetters.includes(char) ? char : "_").join(' ');
+        const display = currentWord.split('').map(char => 
+            (guessedLetters.includes(char) || char === " " || char === ".") ? char : "_"
+        ).join(' ');
         document.getElementById('word-box').innerText = display;
 
         if (!display.includes("_")) {
@@ -184,7 +187,7 @@
     }
 
     window.guess = function(char) {
-        if (guessedLetters.includes(char) || currentWord.split('').every(c => guessedLetters.includes(c))) return;
+        if (guessedLetters.includes(char)) return;
 
         const keyBtn = document.getElementById(`key-${char}`);
         if (currentWord.includes(char)) {
@@ -196,7 +199,7 @@
             const kb = document.getElementById('keyboard');
             kb.classList.add('shake');
             setTimeout(() => kb.classList.remove('shake'), 400);
-            document.getElementById('message').innerText = "Try another letter!";
+            document.getElementById('message').innerText = "Not that one, try again!";
         }
     }
 
@@ -204,17 +207,15 @@
         const lettersInWord = currentWord.split('');
         const allKeys = document.querySelectorAll('.key');
         allKeys.forEach(btn => {
-            const char = btn.innerText;
-            if (!lettersInWord.includes(char)) {
+            if (!lettersInWord.includes(btn.innerText)) {
                 btn.classList.add('hidden');
             }
         });
-        document.getElementById('message').innerText = "Only useful letters left!";
+        document.getElementById('message').innerText = "The power of Hint! ✨";
     }
 
     window.speakWord = function() {
         window.speechSynthesis.cancel();
-        // 使用英國口音 (en-GB)
         const msg = new SpeechSynthesisUtterance(currentWord.toLowerCase());
         msg.lang = 'en-GB';
         msg.rate = 0.8;
@@ -222,14 +223,14 @@
     }
 
     function gameWin() {
-        document.getElementById('message').innerText = "Excellent! +2 XP! 💎";
+        document.getElementById('message').innerText = `Brilliant, ${heroName}! +2 XP! 💎`;
         document.getElementById('diamond').classList.add('active-diamond');
         document.getElementById('nextBtn').style.display = 'inline-block';
         addGlobalXP(2);
         
-        // 煙花效果 (簡單版)
-        const winMsg = new SpeechSynthesisUtterance("Brilliant spelling, Jovan!");
+        const winMsg = new SpeechSynthesisUtterance(`Excellent spelling, ${heroName}! You are a true hero.`);
         winMsg.lang = 'en-GB';
+        winMsg.rate = 0.9;
         window.speechSynthesis.speak(winMsg);
     }
 
