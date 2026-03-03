@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jovan's Spelling Quest</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'VT323', monospace;
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #hero-status {
+            background: #34495e; border: 4px solid #1a120c; border-radius: 15px;
+            max-width: 600px; margin: 0 auto 15px; padding: 12px;
+            box-shadow: 0 6px 0 #000;
+        }
+
+        #hero-name { color: #FFFF55; font-size: 1.8em; }
+        .global-xp-display { color: #55FF55; font-size: 1.4em; }
+
+        .word-display {
+            font-size: 3.5em;
+            letter-spacing: 15px;
+            margin: 20px 0;
+            min-height: 1.2em;
+            color: #55FF55;
+            text-shadow: 3px 3px #000;
+        }
+
+        /* QWERTY 鍵盤樣式 */
+        .keyboard {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .key-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+        .key {
+            width: 40px;
+            height: 50px;
+            background: #ecf0f1;
+            color: #2c3e50;
+            border: 3px solid #7f8c8d;
+            border-radius: 6px;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.1s;
+        }
+        .key.correct { background: #2ecc71; color: white; border-color: #27ae60; }
+        .key.wrong { background: #95a5a6; color: #bdc3c7; border-color: #7f8c8d; cursor: not-allowed; }
+        .key.hidden { visibility: hidden; pointer-events: none; }
+
+        /* 震動動畫 */
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        .shake { animation: shake 0.2s ease-in-out 2; }
+
+        .btn-group { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
+        .action-btn {
+            padding: 10px 20px;
+            font-size: 1.5em;
+            font-family: 'VT323', monospace;
+            border: 4px solid #000;
+            cursor: pointer;
+            color: white;
+        }
+        .btn-speak { background: #f1c40f; color: black; }
+        .btn-hint { background: #9b59b6; }
+        .btn-next { background: #3498db; display: none; }
+
+        #message { font-size: 1.5em; color: #FFFF55; margin-top: 15px; height: 1.5em; }
+        
+        /* 鑽石動畫 */
+        #diamond { font-size: 4em; transition: 0.3s; filter: grayscale(100%); }
+        .active-diamond { filter: grayscale(0%) !important; transform: scale(1.2); }
+    </style>
+</head>
+<body>
+
+<div id="hero-status">
+    <div id="hero-name">Loading Explorer...</div>
+    <div class="global-xp-display">TOTAL XP: <span id="display-xp">0</span></div>
+</div>
+
+<div id="diamond">💎</div>
+<div id="word-box" class="word-display">_ _ _ _ _</div>
+<div id="message">Can you spell the word?</div>
+
+<div class="keyboard" id="keyboard">
+    </div>
+
+<div class="btn-group">
+    <button class="action-btn btn-speak" onclick="speakWord()">🔊 Hear Word</button>
+    <button class="action-btn btn-hint" onclick="useHint()">💡 Hints</button>
+    <button class="action-btn btn-next" id="nextBtn" onclick="initGame()">Next Word ⏭️</button>
+</div>
+
+<script type="module">
+    import { db, doc, setDoc } from './firebase-config.js';
+
+    // 英國生活化詞庫
+    const wordBank = [
+        "APPLE", "WATER", "BREAD", "HOUSE", "SCHOOL", "TRAIN", "LONDON", 
+        "CHEESE", "GREEN", "HELLO", "PIZZA", "FAMILY", "BANANA", "FLOWER"
+    ];
+
+    let currentWord = "";
+    let guessedLetters = [];
+    let wrongCount = 0;
+    const keyboardRows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+
+    function initHero() {
+        const name = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+        const globalXp = localStorage.getItem('jovan_total_xp') || 0;
+        document.getElementById('hero-name').innerText = name;
+        document.getElementById('display-xp').innerText = globalXp;
+    }
+
+    async function addGlobalXP(amount) {
+        let currentXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
+        let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+        currentXP += amount;
+        localStorage.setItem('jovan_total_xp', currentXP);
+        document.getElementById('display-xp').innerText = currentXP;
+        try {
+            await setDoc(doc(db, "leaderboard", heroName), {
+                name: heroName, xp: currentXP, lastUpdate: new Date()
+            }, { merge: true });
+        } catch (e) { console.error("Sync Error", e); }
+    }
+
+    window.initGame = function() {
+        initHero();
+        currentWord = wordBank[Math.floor(Math.random() * wordBank.length)];
+        guessedLetters = [];
+        wrongCount = 0;
+        document.getElementById('nextBtn').style.display = 'none';
+        document.getElementById('message').innerText = "Guess the letters!";
+        document.getElementById('diamond').classList.remove('active-diamond');
+        renderKeyboard();
+        updateDisplay();
+        speakWord();
+    }
+
+    function renderKeyboard() {
+        const kb = document.getElementById('keyboard');
+        kb.innerHTML = keyboardRows.map(row => `
+            <div class="key-row">
+                ${row.split('').map(char => `
+                    <button class="key" id="key-${char}" onclick="guess('${char}')">${char}</button>
+                `).join('')}
+            </div>
+        `).join('');
+    }
+
+    function updateDisplay() {
+        const display = currentWord.split('').map(char => guessedLetters.includes(char) ? char : "_").join(' ');
+        document.getElementById('word-box').innerText = display;
+
+        if (!display.includes("_")) {
+            gameWin();
+        }
+    }
+
+    window.guess = function(char) {
+        if (guessedLetters.includes(char) || currentWord.split('').every(c => guessedLetters.includes(c))) return;
+
+        const keyBtn = document.getElementById(`key-${char}`);
+        if (currentWord.includes(char)) {
+            guessedLetters.push(char);
+            keyBtn.classList.add('correct');
+            updateDisplay();
+        } else {
+            keyBtn.classList.add('wrong');
+            const kb = document.getElementById('keyboard');
+            kb.classList.add('shake');
+            setTimeout(() => kb.classList.remove('shake'), 400);
+            document.getElementById('message').innerText = "Try another letter!";
+        }
+    }
+
+    window.useHint = function() {
+        const lettersInWord = currentWord.split('');
+        const allKeys = document.querySelectorAll('.key');
+        allKeys.forEach(btn => {
+            const char = btn.innerText;
+            if (!lettersInWord.includes(char)) {
+                btn.classList.add('hidden');
+            }
+        });
+        document.getElementById('message').innerText = "Only useful letters left!";
+    }
+
+    window.speakWord = function() {
+        window.speechSynthesis.cancel();
+        // 使用英國口音 (en-GB)
+        const msg = new SpeechSynthesisUtterance(currentWord.toLowerCase());
+        msg.lang = 'en-GB';
+        msg.rate = 0.8;
+        window.speechSynthesis.speak(msg);
+    }
+
+    function gameWin() {
+        document.getElementById('message').innerText = "Excellent! +2 XP! 💎";
+        document.getElementById('diamond').classList.add('active-diamond');
+        document.getElementById('nextBtn').style.display = 'inline-block';
+        addGlobalXP(2);
+        
+        // 煙花效果 (簡單版)
+        const winMsg = new SpeechSynthesisUtterance("Brilliant spelling, Jovan!");
+        winMsg.lang = 'en-GB';
+        window.speechSynthesis.speak(winMsg);
+    }
+
+    window.onload = initGame;
+</script>
+
+</body>
+</html>
