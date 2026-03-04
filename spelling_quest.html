@@ -104,7 +104,7 @@
 </div>
 
 <div id="inventory-container">
-    <div style="color: #373737; font-weight: bold; margin-bottom: 8px; font-size: 1.2em;">🎒 JOVAN'S INVENTORY</div>
+    <div id="inventory-title" style="color: #373737; font-weight: bold; margin-bottom: 8px; font-size: 1.2em;">🎒 LOADING INVENTORY...</div>
     <div class="inv-grid" id="inv-grid"></div>
 </div>
 
@@ -148,12 +148,16 @@
 
     let currentWord = "", guessedLetters = [], wrongCount = 0, heroName = "", isHintUsed = false;
 
-    function initHero() {
-        heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
-        document.getElementById('hero-name').innerText = heroName;
-        document.getElementById('display-xp').innerText = localStorage.getItem('jovan_total_xp') || 0;
-        updateInventoryUI();
-    }
+function initHero() {
+    heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+    document.getElementById('hero-name').innerText = heroName;
+    document.getElementById('display-xp').innerText = localStorage.getItem('jovan_total_xp') || 0;
+    
+    // 新加呢行：將最底個 Inventory 標題都轉埋英雄名
+    document.getElementById('inventory-title').innerText = `🎒 ${heroName.toUpperCase()}'S INVENTORY`;
+    
+    updateInventoryUI();
+}
 
     function updateInventoryUI() {
         const inv = JSON.parse(localStorage.getItem('jovan_inventory') || "{}");
