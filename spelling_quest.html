@@ -250,29 +250,43 @@ function initHero() {
         m.lang = 'en-GB'; m.rate = 0.8; window.speechSynthesis.speak(m);
     }
 
-    function gameWin() {
+function gameWin() {
         const wrapper = document.getElementById('chest-wrapper');
         wrapper.classList.remove('is-opening');
         wrapper.classList.add('is-open');
         
         let item;
         let winText = "";
+        let speechText = ""; // 用嚟儲存要讀出嚟嘅完整句子
 
         if (wrongCount === 0) {
+            // 零失誤：抽高級池
             item = rarePool[Math.floor(Math.random() * rarePool.length)];
+            wrapper.classList.add('perfect');
             winText = `Perfect, ${heroName}`;
+            // 語音：Perfect, [Name]. You found a [Item].
+            speechText = `Perfect, ${heroName}. You found a ${item.name}.`;
         } else {
+            // 有錯過：抽普通池
             item = commonPool[Math.floor(Math.random() * commonPool.length)];
             winText = `Well done, ${heroName}`;
+            // 語音：Well done, [Name]. You found a [Item].
+            speechText = `Well done, ${heroName}. You found a ${item.name}.`;
         }
 
+        // 畫面上顯示文字同 Icon
         document.getElementById('message').innerText = `${winText}! Found ${item.icon}`;
         document.getElementById('nextBtn').style.display = 'inline-block';
+        
+        // 增加 XP 同放入背包
         addGlobalRewards(2, item.name);
 
+        // 執行語音
         window.speechSynthesis.cancel();
-        const m = new SpeechSynthesisUtterance(winText);
-        m.lang = 'en-GB'; window.speechSynthesis.speak(m);
+        const m = new SpeechSynthesisUtterance(speechText);
+        m.lang = 'en-GB'; 
+        m.rate = 0.85; // 稍微快返少少，聽落精神啲
+        window.speechSynthesis.speak(m);
     }
 
     window.onload = initGame;
