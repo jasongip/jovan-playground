@@ -3,113 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jovan's Spelling Quest: Minecraft Chest</title>
+    <title>Jovan's Spelling Quest: RPG Inventory</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --mc-dirt: #5c3c21;
+            --mc-stone: #777777;
+            --mc-grass: #55ff55;
+            --mc-gui: #c6c6c6;
+            --mc-border-dark: #373737;
+            --mc-border-light: #ffffff;
+        }
+
         body {
             font-family: 'VT323', monospace;
-            background-color: #2c3e50; color: white; text-align: center; padding: 10px; overflow: hidden;
-            touch-action: manipulation;
+            background-color: var(--mc-dirt);
+            background-image: url('https://www.transparenttextures.com/patterns/p6.png'); /* 增加質感 */
+            color: white; text-align: center; padding: 10px; margin: 0;
+            image-rendering: pixelated;
         }
 
-        #hero-status {
-            background: #3d2b1f; border: 4px solid #1a120c; border-radius: 10px;
-            max-width: 600px; margin: 0 auto 10px; padding: 12px; box-shadow: 0 6px 0 #000;
+        /* Minecraft GUI 容器 */
+        .gui-panel {
+            background-color: var(--mc-gui);
+            border: 4px solid var(--mc-border-dark);
+            border-right-color: var(--mc-border-light);
+            border-bottom-color: var(--mc-border-light);
+            box-shadow: inset 4px 4px 0px var(--mc-border-light), inset -4px -4px 0px var(--mc-border-dark);
+            max-width: 600px; margin: 10px auto; padding: 15px; color: #373737;
         }
 
-        /* Minecraft 像素寶箱 CSS */
-        #chest-wrapper {
-            width: 120px; height: 100px; margin: 20px auto; position: relative; perspective: 1000px;
-        }
-        .chest-body {
-            width: 100%; height: 60%; background: #7d5026; position: absolute; bottom: 0;
-            border: 6px solid #3d2b1f; box-sizing: border-box;
-        }
-        .chest-lid {
-            width: 100%; height: 45%; background: #96612e; position: absolute; top: 0;
-            border: 6px solid #3d2b1f; box-sizing: border-box; transform-origin: top;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 2;
-        }
-        .chest-latch {
-            width: 20px; height: 25px; background: #f1c40f; position: absolute;
-            left: 50%; top: 35%; transform: translateX(-50%); border: 3px solid #3d2b1f; z-index: 3;
-        }
-        /* 寶箱狀態 */
-        .is-opening .chest-lid { transform: rotateX(-30deg); }
+        #hero-status { background: #3d2b1f; color: #FFFF55; border: 4px solid #000; margin-bottom: 10px; }
+        #hero-name { font-size: 2em; text-shadow: 2px 2px #000; }
+
+        /* 寶箱 CSS */
+        #chest-wrapper { width: 100px; height: 80px; margin: 15px auto; position: relative; perspective: 1000px; }
+        .chest-body { width: 100%; height: 60%; background: #7d5026; position: absolute; bottom: 0; border: 4px solid #3d2b1f; }
+        .chest-lid { width: 100%; height: 45%; background: #96612e; position: absolute; top: 0; border: 4px solid #3d2b1f; transform-origin: top; transition: 0.4s; z-index: 2; }
+        .chest-latch { width: 15px; height: 20px; background: #f1c40f; position: absolute; left: 50%; top: 35%; transform: translateX(-50%); border: 2px solid #3d2b1f; }
         .is-open .chest-lid { transform: rotateX(-110deg); }
-        .perfect-glow {
-            position: absolute; width: 100%; height: 100%; background: radial-gradient(circle, #55FFFF 0%, transparent 70%);
-            opacity: 0; transition: 0.5s; top: -20px; z-index: 1;
-        }
-        .is-open.perfect .perfect-glow { opacity: 1; animation: pulse 1s infinite; }
 
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        .word-display { font-size: 3em; letter-spacing: 10px; margin: 10px 0; color: #000; text-shadow: 1px 1px #fff; }
 
-        .word-display {
-            font-size: 3.5em; letter-spacing: 12px; margin: 15px 0;
-            color: #55FF55; text-shadow: 3px 3px #000; min-height: 1.2em;
-        }
-
-        .keyboard { display: flex; flex-direction: column; gap: 8px; max-width: 700px; margin: 0 auto; }
-        .key-row { display: flex; justify-content: center; gap: 5px; }
+        /* 鍵盤樣式 */
+        .key-row { display: flex; justify-content: center; gap: 4px; margin-bottom: 4px; }
         .key {
-            width: 42px; height: 52px; background: #ecf0f1; color: #2c3e50;
-            border: 3px solid #7f8c8d; border-radius: 6px; font-size: 1.5em; font-weight: bold;
+            width: 38px; height: 45px; background: #8b8b8b; color: white;
+            border: 3px solid #000; border-top-color: #dbdbdb; border-left-color: #dbdbdb;
+            font-size: 1.4em; font-family: 'VT323'; cursor: pointer;
         }
-        .key.correct { background: #2ecc71; color: white; border-color: #27ae60; }
-        .key.wrong { background: #e74c3c; color: white; border-color: #c0392b; animation: shake 0.2s; }
-        .key.hidden { visibility: hidden; pointer-events: none; }
+        .key.correct { background: #55ff55; color: #000; }
+        .key.wrong { background: #ff5555; animation: shake 0.2s; }
+        .key.hidden { visibility: hidden; }
 
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-
-        #inventory-bar {
-            position: fixed; bottom: 0; left: 0; width: 100%; background: #3d2b1f;
-            border-top: 4px solid #f1c40f; padding: 10px 0; display: flex; justify-content: center;
-            gap: 15px; font-size: 1.8em; color: #f1c40f; z-index: 1000;
+        /* 背包 (Inventory) 樣式 */
+        #inventory-container {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: #c6c6c6; border-top: 4px solid #373737;
+            padding: 10px 0; max-height: 120px; overflow-y: auto; z-index: 1000;
+        }
+        .inv-grid {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 600px; margin: 0 auto;
+        }
+        .inv-slot {
+            width: 50px; height: 50px; background: #8b8b8b; border: 3px solid #373737;
+            display: flex; align-items: center; justify-content: center; position: relative;
+            font-size: 1.5em; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5);
+        }
+        .inv-count {
+            position: absolute; bottom: 2px; right: 2px; font-size: 0.6em; background: #373737; color: #fff; padding: 0 2px;
         }
 
-        .action-btn { padding: 10px 20px; font-size: 1.5em; font-family: 'VT323', monospace; border: 4px solid #000; cursor: pointer; color: white; }
-        .btn-speak { background: #f1c40f; color: black; }
+        .action-btn { padding: 8px 15px; font-size: 1.2em; border: 3px solid #000; cursor: pointer; color: #fff; margin: 0 5px; }
+        .btn-speak { background: #f1c40f; color: #000; }
         .btn-hint { background: #9b59b6; }
         .btn-next { background: #3498db; display: none; }
-        #message { font-size: 1.8em; color: #FFFF55; min-height: 1.5em; text-shadow: 2px 2px #000; }
+        #message { font-size: 1.5em; color: #3d2b1f; font-weight: bold; margin: 10px 0; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
     </style>
 </head>
 <body>
 
-<div id="hero-status">
-    <div id="hero-name">Loading...</div>
-    <div class="global-xp-display">TOTAL XP: <span id="display-xp">0</span></div>
+<div id="hero-status" class="gui-panel" style="background: #3d2b1f; padding: 5px;">
+    <div id="hero-name">Hero Name</div>
+    <div style="font-size: 1.2em; color: #55ff55;">XP: <span id="display-xp">0</span></div>
 </div>
 
-<div id="chest-wrapper">
-    <div class="perfect-glow"></div>
-    <div class="chest-lid"><div class="chest-latch"></div></div>
-    <div class="chest-body"></div>
+<div class="gui-panel">
+    <div id="chest-wrapper">
+        <div class="chest-lid"><div class="chest-latch"></div></div>
+        <div class="chest-body"></div>
+    </div>
+    <div id="word-box" class="word-display">_ _ _ _ _</div>
+    <div id="message">Loading Treasure...</div>
+    
+    <div class="keyboard" id="keyboard"></div>
+
+    <div style="margin-top: 15px;">
+        <button class="action-btn btn-speak" onclick="speakWord()">🔊 Hear</button>
+        <button class="action-btn btn-hint" onclick="useHint()">💡 Hint</button>
+        <button class="action-btn btn-next" id="nextBtn" onclick="initGame()">Next ⏭️</button>
+    </div>
 </div>
 
-<div id="word-box" class="word-display">_ _ _ _ _</div>
-<div id="message">Unlock the loot!</div>
-
-<div class="keyboard" id="keyboard"></div>
-
-<div class="btn-group" style="margin-bottom: 70px; margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
-    <button class="action-btn btn-speak" onclick="speakWord()">🔊 Hear</button>
-    <button class="action-btn btn-hint" onclick="useHint()">💡 Hints</button>
-    <button class="action-btn btn-next" id="nextBtn" onclick="initGame()">Next ⏭️</button>
-</div>
-
-<div id="inventory-bar">
-    <span>💎 TREASURY:</span>
-    <span id="diamond-total">0</span>
+<div id="inventory-container">
+    <div style="color: #373737; font-weight: bold; margin-bottom: 5px;">JOVAN'S INVENTORY</div>
+    <div class="inv-grid" id="inv-grid"></div>
 </div>
 
 <script type="module">
     import { db, doc, setDoc } from './firebase-config.js';
 
-    const wordBank = [
-        "THE", "A", "DO", "TO", "TODAY", "OF", "SAID", "SAYS", "ARE", "WERE", "WAS", "IS", "HIS", "HAS", "I", "YOU", "YOUR", "THEY", "BE", "HE", "ME", "SHE", "WE", "NO", "GO", "SO", "BY", "MY", "HERE", "THERE", "WHERE", "LOVE", "COME", "SOME", "ONE", "ONCE", "ASK", "FRIEND", "SCHOOL", "PUT", "PUSH", "PULL", "FULL", "HOUSE", "OUR",
-        "EVERYBODY", "EVEN", "GREAT", "BREAK", "STEAK", "PRETTY", "BEAUTIFUL", "AFTER", "FAST", "LAST", "PAST", "FATHER", "CLASS", "GRASS", "PASS", "PLANT", "PATH", "BATH", "HOUR", "MOVE", "PROVE", "IMPROVE", "SURE", "SUGAR", "EYE", "COULD", "SHOULD", "WOULD", "WHO", "WHOLE", "ANY", "MANY", "CLOTHES", "BUSY", "PEOPLE", "WATER", "AGAIN", "HALF", "MONEY", "MR", "MRS", "PARENTS", "DOOR", "FLOOR", "POOR", "BECAUSE", "FIND", "KIND", "MIND", "BEHIND", "CHILD", "CHILDREN", "WILD", "CLIMB", "MOST", "ONLY", "BOTH", "OLD", "COLD", "GOLD", "HOLD", "TOLD", "EVERY"
+    const wordBank = ["THE", "SAID", "SCHOOL", "HOUSE", "BECAUSE", "FRIEND", "PEOPLE", "WATER", "MONEY", "BEAUTIFUL", "FATHER", "PARENTS", "EVERYBODY", "SHOULD", "WOULD", "COULD"]; // (此處可填滿之前提供的 145 字)
+
+    // 定義物品池
+    const rareLoot = [
+        { name: "Diamond", icon: "💎" }, { name: "Sword", icon: "⚔️" }, 
+        { name: "Shield", icon: "🛡️" }, { name: "Chestplate", icon: "👕" }, 
+        { name: "Mage Hat", icon: "🧙‍♂️" }, { name: "Helmet", icon: "🪖" }
+    ];
+    const commonLoot = [
+        { name: "Gold Coin", icon: "🪙" }, { name: "Steak", icon: "🥩" }, 
+        { name: "Potion", icon: "🧪" }, { name: "Boots", icon: "👞" }
     ];
 
     let currentWord = "", guessedLetters = [], wrongCount = 0, heroName = "";
@@ -118,28 +133,51 @@
         heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
         document.getElementById('hero-name').innerText = heroName;
         document.getElementById('display-xp').innerText = localStorage.getItem('jovan_total_xp') || 0;
-        document.getElementById('diamond-total').innerText = localStorage.getItem('jovan_diamonds_total') || 0;
+        updateInventoryUI();
     }
 
-    async function addGlobalRewards(xpAmt, diaAmt) {
+    function updateInventoryUI() {
+        const inv = JSON.parse(localStorage.getItem('jovan_inventory') || "{}");
+        const grid = document.getElementById('inv-grid');
+        grid.innerHTML = "";
+        
+        // 合併顯示所有物品及其 icon
+        const allItems = [...rareLoot, ...commonLoot];
+        allItems.forEach(item => {
+            if (inv[item.name]) {
+                grid.innerHTML += `
+                    <div class="inv-slot">
+                        ${item.icon}
+                        <div class="inv-count">${inv[item.name]}</div>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    async function addGlobalRewards(xpAmt, itemName) {
         let xp = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
-        let dia = parseInt(localStorage.getItem('jovan_diamonds_total')) || 0;
-        xp += xpAmt; dia += diaAmt;
+        let inv = JSON.parse(localStorage.getItem('jovan_inventory') || "{}");
+        
+        xp += xpAmt;
+        inv[itemName] = (inv[itemName] || 0) + 1;
+        
         localStorage.setItem('jovan_total_xp', xp);
-        localStorage.setItem('jovan_diamonds_total', dia);
+        localStorage.setItem('jovan_inventory', JSON.stringify(inv));
+        
         document.getElementById('display-xp').innerText = xp;
-        document.getElementById('diamond-total').innerText = dia;
-        try { await setDoc(doc(db, "leaderboard", heroName), { name: heroName, xp, diamonds: dia, lastUpdate: new Date() }, { merge: true }); } catch (e) {}
+        updateInventoryUI();
+
+        try { await setDoc(doc(db, "leaderboard", heroName), { name: heroName, xp, inventory: inv, lastUpdate: new Date() }, { merge: true }); } catch (e) {}
     }
 
     window.initGame = function() {
         initHero();
         currentWord = wordBank[Math.floor(Math.random() * wordBank.length)].toUpperCase();
         guessedLetters = []; wrongCount = 0;
-        const wrapper = document.getElementById('chest-wrapper');
-        wrapper.className = ""; // Reset chest state
+        document.getElementById('chest-wrapper').classList.remove('is-open');
         document.getElementById('nextBtn').style.display = 'none';
-        document.getElementById('message').innerText = "Unlock the Loot!";
+        document.getElementById('message').innerText = "Spell it to open!";
         renderKeyboard(); updateDisplay(); speakWord();
     }
 
@@ -151,7 +189,6 @@
     function updateDisplay() {
         const display = currentWord.split('').map(c => (guessedLetters.includes(c) || c === " " || c === ".") ? c : "_").join(' ');
         document.getElementById('word-box').innerText = display;
-        if (guessedLetters.length > 0) document.getElementById('chest-wrapper').classList.add('is-opening');
         if (!display.includes("_")) gameWin();
     }
 
@@ -161,7 +198,7 @@
             guessedLetters.push(char); document.getElementById(`key-${char}`).classList.add('correct'); updateDisplay();
         } else {
             wrongCount++; document.getElementById(`key-${char}`).classList.add('wrong');
-            document.getElementById('message').innerText = "Locked! Try again.";
+            document.getElementById('message').innerText = "Wrong key! *Clank*";
         }
     }
 
@@ -172,25 +209,21 @@
     window.speakWord = function() { window.speechSynthesis.cancel(); const m = new SpeechSynthesisUtterance(currentWord.toLowerCase()); m.lang = 'en-GB'; m.rate = 0.8; window.speechSynthesis.speak(m); }
 
     function gameWin() {
-        const wrapper = document.getElementById('chest-wrapper');
-        wrapper.classList.remove('is-opening');
-        wrapper.classList.add('is-open');
-        
+        document.getElementById('chest-wrapper').classList.add('is-open');
+        let itemDropped;
         let winText = "";
-        let diaWon = 0;
 
         if (wrongCount === 0) {
-            diaWon = 3;
-            wrapper.classList.add('perfect');
-            winText = `Perfect, ${heroName}`;
+            itemDropped = rareLoot[Math.floor(Math.random() * rareLoot.length)];
+            winText = `Perfect, ${heroName}! Found: ${itemDropped.name}`;
         } else {
-            diaWon = 1;
-            winText = `Well done, ${heroName}`;
+            itemDropped = commonLoot[Math.floor(Math.random() * commonLoot.length)];
+            winText = `Well done, ${heroName}! Got: ${itemDropped.name}`;
         }
 
         document.getElementById('message').innerText = winText;
         document.getElementById('nextBtn').style.display = 'inline-block';
-        addGlobalRewards(2, diaWon);
+        addGlobalRewards(2, itemDropped.name);
 
         window.speechSynthesis.cancel();
         const m = new SpeechSynthesisUtterance(winText);
