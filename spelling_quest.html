@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jovan's Spelling Quest: Merchant Edition</title>
+    <title>Jovan's Spelling Quest: Gold Merchant</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -43,7 +43,7 @@
 
         .word-display { font-size: 3.8em; letter-spacing: 12px; margin: 15px 0; color: #000; font-weight: bold; min-height: 1.2em; }
 
-        /* iPad 加大版 QWERTY 鍵盤 */
+        /* iPad 鍵盤 */
         .keyboard { display: flex; flex-direction: column; gap: 10px; max-width: 95%; margin: 15px auto; }
         .key-row { display: flex; justify-content: center; gap: 8px; }
         .key {
@@ -56,18 +56,13 @@
         .key.wrong { background: #ff5555; animation: shake 0.2s; border-color: #800000; }
         .key.hidden { visibility: hidden; pointer-events: none; }
 
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-
-        /* 背包 Inventory - 橫向滾動防止遮擋 */
+        /* 背包 Inventory - 橫向滾動 */
         #inventory-container {
             position: fixed; bottom: 0; left: 0; width: 100%; background: #c6c6c6; border-top: 6px solid #373737;
             padding: 5px 0; height: 95px; z-index: 1000; overflow: hidden;
         }
         #inventory-title { color: #373737; font-weight: bold; margin-bottom: 5px; font-size: 1.1em; }
-        .inv-grid { 
-            display: flex; flex-wrap: nowrap; overflow-x: auto; padding: 5px 15px; gap: 10px; 
-            -webkit-overflow-scrolling: touch; 
-        }
+        .inv-grid { display: flex; flex-wrap: nowrap; overflow-x: auto; padding: 5px 15px; gap: 10px; -webkit-overflow-scrolling: touch; }
         .inv-grid::-webkit-scrollbar { display: none; }
         .inv-slot {
             flex: 0 0 55px; width: 55px; height: 55px; background: #8b8b8b; border: 4px solid #373737;
@@ -86,10 +81,10 @@
 <body>
 
 <div id="hero-status" class="gui-panel">
-    <div id="hero-name">Loading Warrior...</div>
+    <div id="hero-name">Loading Explorer...</div>
     <div style="font-size: 1.4em; display: flex; justify-content: center; gap: 25px;">
         <span style="color: #55ff55;">XP: <span id="display-xp">0</span></span>
-        <span style="color: #f1c40f;">🪙: <span id="gold-total">0</span></span>
+        <span style="color: #f1c40f;">🟡: <span id="gold-total">0</span></span>
     </div>
 </div>
 
@@ -100,9 +95,7 @@
     </div>
     <div id="word-box" class="word-display">_ _ _ _ _</div>
     <div id="message">Unlock the loot!</div>
-    
     <div class="keyboard" id="keyboard"></div>
-
     <div style="margin-top: 15px;">
         <button class="action-btn btn-speak" onclick="speakWord()">🔊 Hear</button>
         <button class="action-btn btn-hint" onclick="useHint()">💡 Hint</button>
@@ -118,54 +111,29 @@
 <script type="module">
     import { db, doc, setDoc } from './firebase-config.js';
 
-    const wordBank = [
-        "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY",
-        "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
-        "SPRING", "SUMMER", "AUTUMN", "WINTER", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", 
-        "HUNDRED", "THOUSAND", "UP", "DOWN", "LEFT", "RIGHT", "BIG", "SMALL", "MANY", "FEW", "PERSON", "MOUTH", "HAND", "FOOT", 
-        "EYE", "EAR", "HEART", "HEAD", "MOUNTAIN", "WATER", "WOOD", "SOIL", "SUN", "MOON", "SKY", "FIRE", "WIND", "RAIN", 
-        "ELECTRICITY", "DAD", "MOM", "BROTHER", "SISTER", "MAN", "WOMAN", "OLD", "YOUNG", "TEACHER", "STUDENT", "FRIEND", 
-        "PARK", "GRANDMA", "SCHOOL", "HOME", "DOOR", "WINDOW", "BED", "CHAIR", "TABLE", "LAMP", "PEN", "BOOK", "PAPER", 
-        "DRAW", "SING", "FLOWER", "GRASS", "TREE", "LEAF", "FRUIT", "RICE", "MEAT", "BEAN", "COW", "SHEEP", "HORSE", 
-        "CHICKEN", "DOG", "CAT", "FISH", "BIRD", "MIDDLE", "COUNTRY", "HONG KONG", "EXIT", "ENTER", "OPEN", "CLOSE", 
-        "COME", "GO", "SIT", "STAND", "WALK", "RUN", "JUMP", "FLY", "LISTEN", "SPEAK", "READ", "WRITE", "LOOK", "SEE", 
-        "EARLY", "NOON", "LATE", "RED", "YELLOW", "BLUE", "GREEN", "WHITE", "BLACK", "GOLD", "I", "FATHER", "MOTHER", 
-        "CLOUD", "SINGLE", "CAR", "REST", "STONE", "OF", "IS", "BALL", "DO", "CAN", "THEM", "POWER", "JADE", "KING", 
-        "BRIGHT", "ANCIENT", "CLOTHES", "BOW", "TOWEL", "EARTH", "THE", "SAID", "SAYS", "ARE", "WERE", "WAS", "HIS", "HAS", 
-        "YOU", "YOUR", "THEY", "BE", "HE", "ME", "SHE", "WE", "NO", "SO", "BY", "MY", "HERE", "THERE", "WHERE", "LOVE", 
-        "COME", "SOME", "ONCE", "ASK", "PUT", "PUSH", "PULL", "FULL", "HOUSE", "OUR", "EVERYBODY", "EVEN", "GREAT", 
-        "BREAK", "STEAK", "PRETTY", "BEAUTIFUL", "AFTER", "FAST", "LAST", "PAST", "CLASS", "GRASS", "PASS", "PLANT", 
-        "PATH", "BATH", "HOUR", "MOVE", "PROVE", "IMPROVE", "SURE", "SUGAR", "WHO", "WHOLE", "ANY", "BUSY", "PEOPLE", 
-        "AGAIN", "HALF", "MONEY", "MR", "MRS", "PARENTS", "FLOOR", "POOR", "BECAUSE", "FIND", "KIND", "MIND", "BEHIND", 
-        "CHILD", "CHILDREN", "WILD", "CLIMB", "MOST", "ONLY", "BOTH", "COLD", "HOLD", "TOLD", "EVERY"
-    ];
+    // 完整的 170+ 字庫
+    const wordBank = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY", "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER", "SPRING", "SUMMER", "AUTUMN", "WINTER", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "HUNDRED", "THOUSAND", "UP", "DOWN", "LEFT", "RIGHT", "BIG", "SMALL", "MANY", "FEW", "PERSON", "MOUTH", "HAND", "FOOT", "EYE", "EAR", "HEART", "HEAD", "MOUNTAIN", "WATER", "WOOD", "SOIL", "SUN", "MOON", "SKY", "FIRE", "WIND", "RAIN", "ELECTRICITY", "DAD", "MOM", "BROTHER", "SISTER", "MAN", "WOMAN", "OLD", "YOUNG", "TEACHER", "STUDENT", "FRIEND", "PARK", "GRANDMA", "SCHOOL", "HOME", "DOOR", "WINDOW", "BED", "CHAIR", "TABLE", "LAMP", "PEN", "BOOK", "PAPER", "DRAW", "SING", "FLOWER", "GRASS", "TREE", "LEAF", "FRUIT", "RICE", "MEAT", "BEAN", "COW", "SHEEP", "HORSE", "CHICKEN", "DOG", "CAT", "FISH", "BIRD", "MIDDLE", "COUNTRY", "HONG KONG", "EXIT", "ENTER", "OPEN", "CLOSE", "COME", "GO", "SIT", "STAND", "WALK", "RUN", "JUMP", "FLY", "LISTEN", "SPEAK", "READ", "WRITE", "LOOK", "SEE", "EARLY", "NOON", "LATE", "RED", "YELLOW", "BLUE", "GREEN", "WHITE", "BLACK", "GOLD", "I", "FATHER", "MOTHER", "CLOUD", "SINGLE", "CAR", "REST", "STONE", "OF", "IS", "BALL", "DO", "CAN", "THEM", "POWER", "JADE", "KING", "BRIGHT", "ANCIENT", "CLOTHES", "BOW", "TOWEL", "EARTH", "THE", "SAID", "SAYS", "ARE", "WERE", "WAS", "HIS", "HAS", "YOU", "YOUR", "THEY", "BE", "HE", "ME", "SHE", "WE", "NO", "SO", "BY", "MY", "HERE", "THERE", "WHERE", "LOVE", "COME", "SOME", "ONCE", "ASK", "PUT", "PUSH", "PULL", "FULL", "HOUSE", "OUR", "EVERYBODY", "EVEN", "GREAT", "BREAK", "STEAK", "PRETTY", "BEAUTIFUL", "AFTER", "FAST", "LAST", "PAST", "CLASS", "GRASS", "PASS", "PLANT", "PATH", "BATH", "HOUR", "MOVE", "PROVE", "IMPROVE", "SURE", "SUGAR", "WHO", "WHOLE", "ANY", "BUSY", "PEOPLE", "AGAIN", "HALF", "MONEY", "MR", "MRS", "PARENTS", "FLOOR", "POOR", "BECAUSE", "FIND", "KIND", "MIND", "BEHIND", "CHILD", "CHILDREN", "WILD", "CLIMB", "MOST", "ONLY", "BOTH", "COLD", "HOLD", "TOLD", "EVERY"];
 
     const rarePool = [
-        { name: "Diamond", icon: "💎", price: 30 }, 
-        { name: "Diamond Sword", icon: "⚔️", price: 30 }, 
-        { name: "Shield", icon: "🛡️", price: 30 }, 
-        { name: "Armor", icon: "👕", price: 30 }, 
-        { name: "Wizard Hat", icon: "🧙‍♂️", price: 30 }, 
-        { name: "Helmet", icon: "🪖", price: 30 },
-        { name: "Bow", icon: "🏹", price: 30 }, 
-        { name: "Golden Apple", icon: "🍎", price: 30 }
+        { name: "Diamond", icon: "💎", price: 30 }, { name: "Diamond Sword", icon: "⚔️", price: 30 }, 
+        { name: "Shield", icon: "🛡️", price: 30 }, { name: "Armor", icon: "👕", price: 30 }, 
+        { name: "Wizard Hat", icon: "🧙‍♂️", price: 30 }, { name: "Helmet", icon: "🪖", price: 30 },
+        { name: "Bow", icon: "🏹", price: 30 }, { name: "Golden Apple", icon: "🍎", price: 30 }
     ];
+    // 使用 Coal 替代原本的 Gold Coin 戰利品
     const commonPool = [
-        { name: "Gold Coin", icon: "🪙", price: 10 }, 
-        { name: "Steak", icon: "🥩", price: 10 }, 
-        { name: "Potion", icon: "🧪", price: 10 }, 
-        { name: "Boots", icon: "👞", price: 10 }, 
-        { name: "Stick", icon: "🥢", price: 10 }, 
-        { name: "Bread", icon: "🍞", price: 10 }
+        { name: "Coal", icon: "⬛", price: 10 }, { name: "Steak", icon: "🥩", price: 10 }, 
+        { name: "Potion", icon: "🧪", price: 10 }, { name: "Boots", icon: "👞", price: 10 }, 
+        { name: "Stick", icon: "🥢", price: 10 }, { name: "Bread", icon: "🍞", price: 10 }
     ];
 
-    let currentWord = "", guessedLetters = [], wrongCount = 0, heroName = "", isHintUsed = false;
+    let currentWord = "", guessedLetters = [], wrongCount = 0, heroName = "";
 
     function initHero() {
         heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
         document.getElementById('hero-name').innerText = heroName;
         document.getElementById('display-xp').innerText = localStorage.getItem('jovan_total_xp') || 0;
-        document.getElementById('inventory-title').innerText = `🎒 ${heroName.toUpperCase()}'S INVENTORY (TAP TO SELL)`;
+        document.getElementById('inventory-title').innerText = `🎒 ${heroName.toUpperCase()}'S INVENTORY`;
         updateInventoryUI();
     }
 
@@ -199,7 +167,7 @@
             updateInventoryUI();
             
             window.speechSynthesis.cancel();
-            const m = new SpeechSynthesisUtterance(`Sold ${name}. You earned ${price} coins.`);
+            const m = new SpeechSynthesisUtterance(`Sold ${name}. You earned ${price} gold coins.`);
             m.lang = 'en-GB'; m.rate = 0.9;
             window.speechSynthesis.speak(m);
             syncToFirebase();
@@ -216,10 +184,10 @@
     window.initGame = function() {
         initHero();
         currentWord = wordBank[Math.floor(Math.random() * wordBank.length)].toUpperCase();
-        guessedLetters = []; wrongCount = 0; isHintUsed = false;
+        guessedLetters = []; wrongCount = 0;
         document.getElementById('chest-wrapper').className = "";
         document.getElementById('nextBtn').style.display = 'none';
-        document.getElementById('message').innerText = "Spell to unlock loot!";
+        document.getElementById('message').innerText = "Spell to trade for loot!";
         renderKeyboard(); updateDisplay(); speakWord();
     }
 
@@ -240,12 +208,11 @@
             guessedLetters.push(char); document.getElementById(`key-${char}`).classList.add('correct'); updateDisplay();
         } else {
             wrongCount++; document.getElementById(`key-${char}`).classList.add('wrong');
-            document.getElementById('message').innerText = "Clank! Locked.";
+            document.getElementById('message').innerText = "Clank! The lock is stuck.";
         }
     }
 
     window.useHint = function() {
-        isHintUsed = true;
         const remaining = currentWord.split('').slice(guessedLetters.length);
         document.querySelectorAll('.key').forEach(b => { if(!remaining.includes(b.innerText)) b.classList.add('hidden'); });
     }
@@ -264,11 +231,9 @@
         document.getElementById('message').innerText = `${winText}! Got ${item.icon}`;
         document.getElementById('nextBtn').style.display = 'inline-block';
         
-        // 更新 XP 
         let xp = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
         localStorage.setItem('jovan_total_xp', xp + 2);
         
-        // 更新背包
         let inv = JSON.parse(localStorage.getItem('jovan_inventory') || "{}");
         inv[item.name] = (inv[item.name] || 0) + 1;
         localStorage.setItem('jovan_inventory', JSON.stringify(inv));
