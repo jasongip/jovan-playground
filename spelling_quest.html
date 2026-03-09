@@ -174,11 +174,67 @@
         }
     };
 
-    async function syncToFirebase() {
-        const xp = localStorage.getItem('jovan_total_xp') || 0;
-        const inv = JSON.parse(localStorage.getItem('jovan_inventory') || "{}");
+// 1. 新增：統一加分與週榜紀錄邏輯
+    async function addXP(amount) {
+        let totalXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
+        let dailyLog = JSON.parse(localStorage.getItem('jovan_daily_log') || "{}");
+        let today = new Date().toISOString().split('T')[0];
+        
+        // 紀錄今日得分
+        dailyLog[today] = (dailyLog[today] || 0) + amount;
+        
+        // 計算週榜總分 (Rolling 7 Days)
+        let weeklyXP = 0;
+        for (let i = 0; i < 7; i++) {
+            let d = new Date();
+            d.setDate(d.getDate() - i);
+            let dateStr = d.toISOString().split('T')[0];
+            if (dailyLog[dateStr]) weeklyXP += dailyLog[dateStr];
+        }
+
+        // 更新 Local
+        totalXP += amount;
+        localStorage.setItem('jovan_total_xp', totalXP);
+        localStorage.setItem('jovan_daily_log', JSON.stringify(dailyLog));
+        
+        // 更新畫面上嘅 XP 顯示
+        const xpDisp = document.getElementById('display-xp');
+        if (xpDisp) xpDisp.innerText = totalXP;
+
+        // 呼叫同步 (傳送最新數據)
+        await syncToFirebase(totalXP, weeklyXP);
+    }
+
+    // 2. 修改：同步函數 (加入 weeklyXP 欄位)
+    async function syncToFirebase(passedXp, passedWeeklyXp) {
+        // 如果係由 sellItem 呼叫，可能冇傳入 XP，呢度做返個 fallback
+        const xp = passedXp || localStorage.getItem('jovan_total_xp') || 0;
         const gold = localStorage.getItem('jovan_gold_coins') || 0;
-        try { await setDoc(doc(db, "leaderboard", heroName), { name: heroName, xp, inventory: inv, goldCoins: gold, lastUpdate: new Date() }, { merge: true }); } catch (e) {}
+        const inv = JSON.parse(localStorage.getItem('jovan_inventory') || "{}");
+        
+        // 如果冇傳入 weeklyXP，即場計返一次
+        let weeklyXP = passedWeeklyXp;
+        if (weeklyXP === undefined) {
+            let dailyLog = JSON.parse(localStorage.getItem('jovan_daily_log') || "{}");
+            weeklyXP = 0;
+            for (let i = 0; i < 7; i++) {
+                let d = new Date(); d.setDate(d.getDate() - i);
+                let dateStr = d.toISOString().split('T')[0];
+                if (dailyLog[dateStr]) weeklyXP += dailyLog[dateStr];
+            }
+        }
+
+        try {
+            await setDoc(doc(db, "leaderboard", heroName), {
+                name: heroName,
+                xp: parseInt(xp),
+                weeklyXP: parseInt(weeklyXP),
+                inventory: inv,
+                goldCoins: parseInt(gold),
+                lastUpdate: new Date()
+            }, { merge: true });
+            console.log("Spelling Quest Cloud Sync Success!");
+        } catch (e) { console.error("Cloud Sync Error:", e); }
     }
 
     window.initGame = function() {
@@ -223,6 +279,7 @@
         m.lang = 'en-GB'; m.rate = 0.8; window.speechSynthesis.speak(m);
     }
 
+// 3. 修改：gameWin 函數 (用新嘅 addXP 取代舊有邏輯)
     function gameWin() {
         const wrapper = document.getElementById('chest-wrapper');
         wrapper.classList.add('is-open');
@@ -231,9 +288,10 @@
         document.getElementById('message').innerText = `${winText}! Got ${item.icon}`;
         document.getElementById('nextBtn').style.display = 'inline-block';
         
-        let xp = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
-        localStorage.setItem('jovan_total_xp', xp + 2);
+        // --- 重點改動：用 addXP 處理加分同週榜紀錄 ---
+        addXP(2); 
         
+        // 更新背包
         let inv = JSON.parse(localStorage.getItem('jovan_inventory') || "{}");
         inv[item.name] = (inv[item.name] || 0) + 1;
         localStorage.setItem('jovan_inventory', JSON.stringify(inv));
@@ -241,7 +299,7 @@
         updateInventoryUI();
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(new SpeechSynthesisUtterance(`${winText}. You found a ${item.name}.`));
-        syncToFirebase();
+        // 注意：呢度唔使再手動 call syncToFirebase，因為 addXP 已經做咗
     }
 
     window.onload = initGame;
