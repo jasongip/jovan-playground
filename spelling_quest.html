@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jovan's Spelling Quest: The Ultimate RPG</title>
+    <title>Jovan's Spelling Quest: Merchant Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -34,12 +34,11 @@
         #hero-status { background: #3d2b1f; color: #FFFF55; border: 4px solid #000; margin-bottom: 10px; padding: 10px; }
         #hero-name { font-size: 2em; text-shadow: 2px 2px #000; }
 
-        /* Minecraft 像素寶箱 */
+        /* 像素寶箱 */
         #chest-wrapper { width: 120px; height: 90px; margin: 15px auto; position: relative; perspective: 1000px; }
         .chest-body { width: 100%; height: 60%; background: #7d5026; position: absolute; bottom: 0; border: 5px solid #3d2b1f; }
         .chest-lid { width: 100%; height: 50%; background: #96612e; position: absolute; top: 0; border: 5px solid #3d2b1f; transform-origin: top; transition: 0.4s; z-index: 2; }
         .chest-latch { width: 20px; height: 25px; background: #f1c40f; position: absolute; left: 50%; top: 35%; transform: translateX(-50%); border: 3px solid #3d2b1f; }
-        .is-opening .chest-lid { transform: rotateX(-30deg); }
         .is-open .chest-lid { transform: rotateX(-110deg); }
 
         .word-display { font-size: 3.8em; letter-spacing: 12px; margin: 15px 0; color: #000; font-weight: bold; min-height: 1.2em; }
@@ -59,16 +58,21 @@
 
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 
-        /* 背包 Inventory */
+        /* 背包 Inventory - 橫向滾動防止遮擋 */
         #inventory-container {
             position: fixed; bottom: 0; left: 0; width: 100%; background: #c6c6c6; border-top: 6px solid #373737;
-            padding: 10px 0; min-height: 110px; z-index: 1000;
+            padding: 5px 0; height: 95px; z-index: 1000; overflow: hidden;
         }
-        .inv-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 90%; margin: 0 auto; }
+        #inventory-title { color: #373737; font-weight: bold; margin-bottom: 5px; font-size: 1.1em; }
+        .inv-grid { 
+            display: flex; flex-wrap: nowrap; overflow-x: auto; padding: 5px 15px; gap: 10px; 
+            -webkit-overflow-scrolling: touch; 
+        }
+        .inv-grid::-webkit-scrollbar { display: none; }
         .inv-slot {
-            width: 55px; height: 55px; background: #8b8b8b; border: 4px solid #373737;
+            flex: 0 0 55px; width: 55px; height: 55px; background: #8b8b8b; border: 4px solid #373737;
             display: flex; align-items: center; justify-content: center; position: relative;
-            font-size: 2em; box-shadow: inset 4px 4px 6px rgba(0,0,0,0.5);
+            font-size: 2em; box-shadow: inset 4px 4px 6px rgba(0,0,0,0.5); cursor: pointer;
         }
         .inv-count { position: absolute; bottom: 2px; right: 2px; font-size: 0.5em; background: #373737; color: #fff; padding: 1px 4px; }
 
@@ -76,27 +80,30 @@
         .btn-speak { background: #f1c40f; color: #000; }
         .btn-hint { background: #9b59b6; }
         .btn-next { background: #3498db; display: none; }
-        #message { font-size: 1.8em; color: #3d2b1f; font-weight: bold; margin: 10px 0; height: 1.2em; text-shadow: 1px 1px #fff; }
+        #message { font-size: 1.8em; color: #3d2b1f; font-weight: bold; margin: 10px 0; height: 1.2em; }
     </style>
 </head>
 <body>
 
 <div id="hero-status" class="gui-panel">
     <div id="hero-name">Loading Warrior...</div>
-    <div style="font-size: 1.4em; color: #55ff55;">Total XP: <span id="display-xp">0</span></div>
+    <div style="font-size: 1.4em; display: flex; justify-content: center; gap: 25px;">
+        <span style="color: #55ff55;">XP: <span id="display-xp">0</span></span>
+        <span style="color: #f1c40f;">🪙: <span id="gold-total">0</span></span>
+    </div>
 </div>
 
-<div class="gui-panel">
+<div class="gui-panel" style="margin-bottom: 110px;">
     <div id="chest-wrapper">
         <div class="chest-lid"><div class="chest-latch"></div></div>
         <div class="chest-body"></div>
     </div>
     <div id="word-box" class="word-display">_ _ _ _ _</div>
-    <div id="message">Spell the tricky word!</div>
+    <div id="message">Unlock the loot!</div>
     
     <div class="keyboard" id="keyboard"></div>
 
-    <div style="margin-top: 10px; margin-bottom: 120px;">
+    <div style="margin-top: 15px;">
         <button class="action-btn btn-speak" onclick="speakWord()">🔊 Hear</button>
         <button class="action-btn btn-hint" onclick="useHint()">💡 Hint</button>
         <button class="action-btn btn-next" id="nextBtn" onclick="initGame()">Next ⏭️</button>
@@ -104,83 +111,106 @@
 </div>
 
 <div id="inventory-container">
-    <div id="inventory-title" style="color: #373737; font-weight: bold; margin-bottom: 8px; font-size: 1.2em;">🎒 LOADING INVENTORY...</div>
+    <div id="inventory-title">🎒 INVENTORY (TAP TO SELL)</div>
     <div class="inv-grid" id="inv-grid"></div>
 </div>
 
 <script type="module">
     import { db, doc, setDoc } from './firebase-config.js';
 
-    // 整合全量詞庫 (170+ 字)
     const wordBank = [
         "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY",
         "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
-        "SPRING", "SUMMER", "AUTUMN", "WINTER",
-        "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "HUNDRED", "THOUSAND",
-        "UP", "DOWN", "LEFT", "RIGHT", "BIG", "SMALL", "MANY", "FEW",
-        "PERSON", "MOUTH", "HAND", "FOOT", "EYE", "EAR", "HEART", "HEAD",
-        "MOUNTAIN", "WATER", "WOOD", "SOIL", "SUN", "MOON", "SKY", "FIRE", "WIND", "RAIN", "ELECTRICITY",
-        "DAD", "MOM", "BROTHER", "SISTER", "MAN", "WOMAN", "OLD", "YOUNG",
-        "TEACHER", "STUDENT", "FRIEND", "PARK", "GRANDMA", "SCHOOL", "HOME",
-        "DOOR", "WINDOW", "BED", "CHAIR", "TABLE", "LAMP", "PEN", "BOOK", "PAPER",
-        "DRAW", "SING", "FLOWER", "GRASS", "TREE", "LEAF", "FRUIT", "RICE", "MEAT", "BEAN",
-        "COW", "SHEEP", "HORSE", "CHICKEN", "DOG", "CAT", "FISH", "BIRD",
-        "MIDDLE", "COUNTRY", "HONG KONG", "EXIT", "ENTER", "OPEN", "CLOSE", "COME", "GO", 
-        "SIT", "STAND", "WALK", "RUN", "JUMP", "FLY", "LISTEN", "SPEAK", "READ", "WRITE", "LOOK", "SEE",
-        "EARLY", "NOON", "LATE", "RED", "YELLOW", "BLUE", "GREEN", "WHITE", "BLACK", "GOLD",
-        "I", "FATHER", "MOTHER", "CLOUD", "SINGLE", "CAR", "REST", "STONE", "OF", "IS", "BALL", "DO", "CAN", 
-        "THEM", "POWER", "JADE", "KING", "BRIGHT", "ANCIENT", "CLOTHES", "BOW", "TOWEL", "EARTH",
-        "THE", "SAID", "SAYS", "ARE", "WERE", "WAS", "HIS", "HAS", "YOU", "YOUR", "THEY", "BE", "HE", "ME", "SHE", "WE", "NO", "SO", "BY", "MY", "HERE", "THERE", "WHERE", "LOVE", "SOME", "ONCE", "ASK", "PUT", "PUSH", "PULL", "FULL", "HOUSE", "OUR",
-        "EVERYBODY", "EVEN", "GREAT", "BREAK", "STEAK", "PRETTY", "BEAUTIFUL", "AFTER", "FAST", "LAST", "PAST", "CLASS", "GRASS", "PASS", "PLANT", "PATH", "BATH", "HOUR", "MOVE", "PROVE", "IMPROVE", "SURE", "SUGAR", "WHO", "WHOLE", "ANY", "BUSY", "PEOPLE", "AGAIN", "HALF", "MONEY", "MR", "MRS", "PARENTS", "FLOOR", "POOR", "BECAUSE", "FIND", "KIND", "MIND", "BEHIND", "CHILD", "CHILDREN", "WILD", "CLIMB", "MOST", "ONLY", "BOTH", "COLD", "HOLD", "TOLD", "EVERY"
+        "SPRING", "SUMMER", "AUTUMN", "WINTER", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", 
+        "HUNDRED", "THOUSAND", "UP", "DOWN", "LEFT", "RIGHT", "BIG", "SMALL", "MANY", "FEW", "PERSON", "MOUTH", "HAND", "FOOT", 
+        "EYE", "EAR", "HEART", "HEAD", "MOUNTAIN", "WATER", "WOOD", "SOIL", "SUN", "MOON", "SKY", "FIRE", "WIND", "RAIN", 
+        "ELECTRICITY", "DAD", "MOM", "BROTHER", "SISTER", "MAN", "WOMAN", "OLD", "YOUNG", "TEACHER", "STUDENT", "FRIEND", 
+        "PARK", "GRANDMA", "SCHOOL", "HOME", "DOOR", "WINDOW", "BED", "CHAIR", "TABLE", "LAMP", "PEN", "BOOK", "PAPER", 
+        "DRAW", "SING", "FLOWER", "GRASS", "TREE", "LEAF", "FRUIT", "RICE", "MEAT", "BEAN", "COW", "SHEEP", "HORSE", 
+        "CHICKEN", "DOG", "CAT", "FISH", "BIRD", "MIDDLE", "COUNTRY", "HONG KONG", "EXIT", "ENTER", "OPEN", "CLOSE", 
+        "COME", "GO", "SIT", "STAND", "WALK", "RUN", "JUMP", "FLY", "LISTEN", "SPEAK", "READ", "WRITE", "LOOK", "SEE", 
+        "EARLY", "NOON", "LATE", "RED", "YELLOW", "BLUE", "GREEN", "WHITE", "BLACK", "GOLD", "I", "FATHER", "MOTHER", 
+        "CLOUD", "SINGLE", "CAR", "REST", "STONE", "OF", "IS", "BALL", "DO", "CAN", "THEM", "POWER", "JADE", "KING", 
+        "BRIGHT", "ANCIENT", "CLOTHES", "BOW", "TOWEL", "EARTH", "THE", "SAID", "SAYS", "ARE", "WERE", "WAS", "HIS", "HAS", 
+        "YOU", "YOUR", "THEY", "BE", "HE", "ME", "SHE", "WE", "NO", "SO", "BY", "MY", "HERE", "THERE", "WHERE", "LOVE", 
+        "COME", "SOME", "ONCE", "ASK", "PUT", "PUSH", "PULL", "FULL", "HOUSE", "OUR", "EVERYBODY", "EVEN", "GREAT", 
+        "BREAK", "STEAK", "PRETTY", "BEAUTIFUL", "AFTER", "FAST", "LAST", "PAST", "CLASS", "GRASS", "PASS", "PLANT", 
+        "PATH", "BATH", "HOUR", "MOVE", "PROVE", "IMPROVE", "SURE", "SUGAR", "WHO", "WHOLE", "ANY", "BUSY", "PEOPLE", 
+        "AGAIN", "HALF", "MONEY", "MR", "MRS", "PARENTS", "FLOOR", "POOR", "BECAUSE", "FIND", "KIND", "MIND", "BEHIND", 
+        "CHILD", "CHILDREN", "WILD", "CLIMB", "MOST", "ONLY", "BOTH", "COLD", "HOLD", "TOLD", "EVERY"
     ];
 
     const rarePool = [
-        { name: "Diamond", icon: "💎" }, { name: "Diamond Sword", icon: "⚔️" }, 
-        { name: "Shield", icon: "🛡️" }, { name: "Armor", icon: "👕" }, 
-        { name: "Wizard Hat", icon: "🧙‍♂️" }, { name: "Helmet", icon: "🪖" },
-        { name: "Bow", icon: "🏹" }, { name: "Golden Apple", icon: "🍎" }
+        { name: "Diamond", icon: "💎", price: 30 }, 
+        { name: "Diamond Sword", icon: "⚔️", price: 30 }, 
+        { name: "Shield", icon: "🛡️", price: 30 }, 
+        { name: "Armor", icon: "👕", price: 30 }, 
+        { name: "Wizard Hat", icon: "🧙‍♂️", price: 30 }, 
+        { name: "Helmet", icon: "🪖", price: 30 },
+        { name: "Bow", icon: "🏹", price: 30 }, 
+        { name: "Golden Apple", icon: "🍎", price: 30 }
     ];
     const commonPool = [
-        { name: "Gold Coin", icon: "🪙" }, { name: "Steak", icon: "🥩" }, 
-        { name: "Potion", icon: "🧪" }, { name: "Boots", icon: "👞" }, 
-        { name: "Stick", icon: "🥢" }, { name: "Bread", icon: "🍞" }
+        { name: "Gold Coin", icon: "🪙", price: 10 }, 
+        { name: "Steak", icon: "🥩", price: 10 }, 
+        { name: "Potion", icon: "🧪", price: 10 }, 
+        { name: "Boots", icon: "👞", price: 10 }, 
+        { name: "Stick", icon: "🥢", price: 10 }, 
+        { name: "Bread", icon: "🍞", price: 10 }
     ];
 
     let currentWord = "", guessedLetters = [], wrongCount = 0, heroName = "", isHintUsed = false;
 
-function initHero() {
-    heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
-    document.getElementById('hero-name').innerText = heroName;
-    document.getElementById('display-xp').innerText = localStorage.getItem('jovan_total_xp') || 0;
-    
-    // 新加呢行：將最底個 Inventory 標題都轉埋英雄名
-    document.getElementById('inventory-title').innerText = `🎒 ${heroName.toUpperCase()}'S INVENTORY`;
-    
-    updateInventoryUI();
-}
+    function initHero() {
+        heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+        document.getElementById('hero-name').innerText = heroName;
+        document.getElementById('display-xp').innerText = localStorage.getItem('jovan_total_xp') || 0;
+        document.getElementById('inventory-title').innerText = `🎒 ${heroName.toUpperCase()}'S INVENTORY (TAP TO SELL)`;
+        updateInventoryUI();
+    }
 
     function updateInventoryUI() {
         const inv = JSON.parse(localStorage.getItem('jovan_inventory') || "{}");
+        const gold = localStorage.getItem('jovan_gold_coins') || 0;
         const grid = document.getElementById('inv-grid');
         grid.innerHTML = "";
+        document.getElementById('gold-total').innerText = gold;
+
         const allItems = [...rarePool, ...commonPool];
         allItems.forEach(item => {
             if (inv[item.name]) {
-                grid.innerHTML += `<div class="inv-slot">${item.icon}<div class="inv-count">${inv[item.name]}</div></div>`;
+                const slot = document.createElement('div');
+                slot.className = 'inv-slot';
+                slot.innerHTML = `${item.icon}<div class="inv-count">${inv[item.name]}</div>`;
+                slot.onclick = () => sellItem(item.name, item.icon, item.price);
+                grid.appendChild(slot);
             }
         });
     }
 
-    async function addGlobalRewards(xpAmt, itemName) {
-        let xp = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
+    window.sellItem = function(name, icon, price) {
         let inv = JSON.parse(localStorage.getItem('jovan_inventory') || "{}");
-        xp += xpAmt;
-        inv[itemName] = (inv[itemName] || 0) + 1;
-        localStorage.setItem('jovan_total_xp', xp);
-        localStorage.setItem('jovan_inventory', JSON.stringify(inv));
-        document.getElementById('display-xp').innerText = xp;
-        updateInventoryUI();
-        try { await setDoc(doc(db, "leaderboard", heroName), { name: heroName, xp, inventory: inv, lastUpdate: new Date() }, { merge: true }); } catch (e) {}
+        if (confirm(`Sell 1x ${icon} ${name} for ${price} Gold Coins?`)) {
+            inv[name] -= 1;
+            if (inv[name] <= 0) delete inv[name];
+            let gold = parseInt(localStorage.getItem('jovan_gold_coins') || 0) + price;
+            localStorage.setItem('jovan_inventory', JSON.stringify(inv));
+            localStorage.setItem('jovan_gold_coins', gold);
+            updateInventoryUI();
+            
+            window.speechSynthesis.cancel();
+            const m = new SpeechSynthesisUtterance(`Sold ${name}. You earned ${price} coins.`);
+            m.lang = 'en-GB'; m.rate = 0.9;
+            window.speechSynthesis.speak(m);
+            syncToFirebase();
+        }
+    };
+
+    async function syncToFirebase() {
+        const xp = localStorage.getItem('jovan_total_xp') || 0;
+        const inv = JSON.parse(localStorage.getItem('jovan_inventory') || "{}");
+        const gold = localStorage.getItem('jovan_gold_coins') || 0;
+        try { await setDoc(doc(db, "leaderboard", heroName), { name: heroName, xp, inventory: inv, goldCoins: gold, lastUpdate: new Date() }, { merge: true }); } catch (e) {}
     }
 
     window.initGame = function() {
@@ -189,7 +219,7 @@ function initHero() {
         guessedLetters = []; wrongCount = 0; isHintUsed = false;
         document.getElementById('chest-wrapper').className = "";
         document.getElementById('nextBtn').style.display = 'none';
-        document.getElementById('message').innerText = "Spell the word to get loot!";
+        document.getElementById('message').innerText = "Spell to unlock loot!";
         renderKeyboard(); updateDisplay(); speakWord();
     }
 
@@ -199,49 +229,25 @@ function initHero() {
     }
 
     function updateDisplay() {
-        // 修正邏輯：必須按次序顯示
-        const display = currentWord.split('').map((c, i) => {
-            if (guessedLetters.length > i) return currentWord[i];
-            return (c === " " || c === ".") ? c : "_";
-        }).join(' ');
-        
+        const display = currentWord.split('').map((c, i) => (guessedLetters.length > i) ? currentWord[i] : ((c === " " || c === ".") ? c : "_")).join(' ');
         document.getElementById('word-box').innerText = display;
-        if (guessedLetters.length > 0) document.getElementById('chest-wrapper').classList.add('is-opening');
         if (!display.includes("_")) gameWin();
     }
 
     window.guess = function(char) {
         if (document.getElementById('nextBtn').style.display === 'inline-block') return;
-        
-        // 核心改動：Hint 之後必須按次序
-        let isCorrect = false;
-        if (isHintUsed) {
-            if (char === currentWord[guessedLetters.length]) isCorrect = true;
+        if (char === currentWord[guessedLetters.length]) {
+            guessedLetters.push(char); document.getElementById(`key-${char}`).classList.add('correct'); updateDisplay();
         } else {
-            // 自由模式：只要係下一個需要嘅字母就得
-            if (char === currentWord[guessedLetters.length]) isCorrect = true;
-        }
-
-        if (isCorrect) {
-            guessedLetters.push(char);
-            document.getElementById(`key-${char}`).classList.add('correct');
-            updateDisplay();
-        } else {
-            wrongCount++;
-            document.getElementById(`key-${char}`).classList.add('wrong');
-            document.getElementById('chest-wrapper').classList.add('chest-shake');
-            setTimeout(() => document.getElementById('chest-wrapper').classList.remove('chest-shake'), 300);
-            document.getElementById('message').innerText = isHintUsed ? "Follow the order!" : "Locked! Try again.";
+            wrongCount++; document.getElementById(`key-${char}`).classList.add('wrong');
+            document.getElementById('message').innerText = "Clank! Locked.";
         }
     }
 
     window.useHint = function() {
         isHintUsed = true;
-        const remainingChars = currentWord.split('').slice(guessedLetters.length);
-        document.querySelectorAll('.key').forEach(btn => {
-            if (!remainingChars.includes(btn.innerText)) btn.classList.add('hidden');
-        });
-        document.getElementById('message').innerText = "Sequence Lock: Follow the order!";
+        const remaining = currentWord.split('').slice(guessedLetters.length);
+        document.querySelectorAll('.key').forEach(b => { if(!remaining.includes(b.innerText)) b.classList.add('hidden'); });
     }
 
     window.speakWord = function() {
@@ -250,43 +256,27 @@ function initHero() {
         m.lang = 'en-GB'; m.rate = 0.8; window.speechSynthesis.speak(m);
     }
 
-function gameWin() {
+    function gameWin() {
         const wrapper = document.getElementById('chest-wrapper');
-        wrapper.classList.remove('is-opening');
         wrapper.classList.add('is-open');
-        
-        let item;
-        let winText = "";
-        let speechText = ""; // 用嚟儲存要讀出嚟嘅完整句子
-
-        if (wrongCount === 0) {
-            // 零失誤：抽高級池
-            item = rarePool[Math.floor(Math.random() * rarePool.length)];
-            wrapper.classList.add('perfect');
-            winText = `Perfect, ${heroName}`;
-            // 語音：Perfect, [Name]. You found a [Item].
-            speechText = `Perfect, ${heroName}. You found a ${item.name}.`;
-        } else {
-            // 有錯過：抽普通池
-            item = commonPool[Math.floor(Math.random() * commonPool.length)];
-            winText = `Well done, ${heroName}`;
-            // 語音：Well done, [Name]. You found a [Item].
-            speechText = `Well done, ${heroName}. You found a ${item.name}.`;
-        }
-
-        // 畫面上顯示文字同 Icon
-        document.getElementById('message').innerText = `${winText}! Found ${item.icon}`;
+        let item = (wrongCount === 0) ? rarePool[Math.floor(Math.random() * rarePool.length)] : commonPool[Math.floor(Math.random() * commonPool.length)];
+        let winText = (wrongCount === 0) ? `Perfect, ${heroName}` : `Well done, ${heroName}`;
+        document.getElementById('message').innerText = `${winText}! Got ${item.icon}`;
         document.getElementById('nextBtn').style.display = 'inline-block';
         
-        // 增加 XP 同放入背包
-        addGlobalRewards(2, item.name);
-
-        // 執行語音
+        // 更新 XP 
+        let xp = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
+        localStorage.setItem('jovan_total_xp', xp + 2);
+        
+        // 更新背包
+        let inv = JSON.parse(localStorage.getItem('jovan_inventory') || "{}");
+        inv[item.name] = (inv[item.name] || 0) + 1;
+        localStorage.setItem('jovan_inventory', JSON.stringify(inv));
+        
+        updateInventoryUI();
         window.speechSynthesis.cancel();
-        const m = new SpeechSynthesisUtterance(speechText);
-        m.lang = 'en-GB'; 
-        m.rate = 0.85; // 稍微快返少少，聽落精神啲
-        window.speechSynthesis.speak(m);
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(`${winText}. You found a ${item.name}.`));
+        syncToFirebase();
     }
 
     window.onload = initGame;
