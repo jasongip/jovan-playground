@@ -26,7 +26,6 @@
         
         h1 { font-size: 3.5em; text-shadow: 5px 5px #000; margin-bottom: 20px; color: #55FF55; }
 
-        /* 英雄狀態欄樣式 */
         #hero-panel {
             background: #3d2b1f; border: 6px solid #1a120c; border-radius: 15px;
             max-width: 600px; margin: 0 auto 10px; padding: 20px; box-shadow: 0 10px 0 #000;
@@ -35,12 +34,22 @@
         #hero-name { color: #FFFF55; font-size: 2.8em; text-shadow: 3px 3px #000; margin: 5px 0; }
         .xp-display { color: #55FF55; font-size: 1.8em; text-shadow: 2px 2px #000; }
 
-        /* 全球領袖榜樣式 */
+        /* 領袖榜樣式更新 */
         #leaderboard-section {
             background: rgba(0,0,0,0.85); border: 5px solid #f1c40f; border-radius: 15px;
             max-width: 600px; margin: 20px auto 30px; padding: 15px; box-shadow: 0 8px 0 #000;
         }
         #leaderboard-section h2 { color: #f1c40f; margin-top: 0; font-size: 2em; text-shadow: 2px 2px #000; }
+
+        /* 雙榜切換 Tab 樣式 */
+        .lb-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        .lb-tab {
+            background: #5c3c21; color: #fff; border: 3px solid #3d2b1f;
+            padding: 8px 15px; cursor: pointer; font-family: 'VT323'; font-size: 1.4em;
+            transition: 0.2s;
+        }
+        .lb-tab.active { background: #f1c40f; color: #000; border-color: #fff; box-shadow: 0 4px 0 #b7950b; }
+
         .lb-table { width: 100%; border-collapse: collapse; font-size: 1.4em; }
         .lb-table th { border-bottom: 3px solid #555; padding: 5px; color: #aaa; }
         .lb-table td { padding: 8px; border-bottom: 1px solid #333; }
@@ -78,14 +87,9 @@
         }
 
         .version-tag {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            font-size: 1.2em;
-            color: rgba(255, 255, 255, 0.4);
-            text-shadow: 2px 2px 0 #000;
-            pointer-events: none;
-            z-index: 2000;
+            position: fixed; bottom: 10px; left: 10px; font-size: 1.2em;
+            color: rgba(255, 255, 255, 0.4); text-shadow: 2px 2px 0 #000;
+            pointer-events: none; z-index: 2000;
         }
     </style>
 </head>
@@ -100,7 +104,11 @@
     </div>
 
     <div id="leaderboard-section">
-        <h2>🏆 GLOBAL LEADERBOARD 🏆</h2>
+        <h2>🏆 LEADERBOARDS 🏆</h2>
+        <div class="lb-tabs">
+            <div id="tab-all" class="lb-tab active" onclick="switchLeaderboard('all')">ALL TIME</div>
+            <div id="tab-weekly" class="lb-tab" onclick="switchLeaderboard('weekly')">LAST 7 DAYS</div>
+        </div>
         <table class="lb-table">
             <thead>
                 <tr>
@@ -138,7 +146,7 @@
             <div class="app-title">Chinese Quest</div>
         </a>
         <a href="idiom_rescue.html" class="app-card">
-            <div class="app-icon">🦊</div>
+            <div class="app-icon">FOX</div>
             <div class="app-title">Idiom Rescue</div>
         </a>
     </div>
@@ -151,56 +159,61 @@
     <script type="module">
         import { db, collection, getDocs, query, orderBy, limit } from './firebase-config.js';
 
+        let myHeroName = "";
+
         function initHero() {
-            let heroName = localStorage.getItem('jovan_hero_name');
-            let totalXP = localStorage.getItem('jovan_total_xp') || 0;
-
-            if (!heroName) {
-                const attrs = ["Thunder", "Flame", "Water", "Earth", "Wind", "Light", "Dark"];
-                const classes = ["Knight", "Warrior", "Mage", "Archer", "Paladin", "Ranger"];
-                const rAttr = attrs[Math.floor(Math.random() * attrs.length)];
-                const rClass = classes[Math.floor(Math.random() * classes.length)];
-                heroName = rAttr + " " + rClass;
-                localStorage.setItem('jovan_hero_name', heroName);
-                localStorage.setItem('jovan_total_xp', 0);
-            }
-
-            document.getElementById('hero-name').innerText = heroName;
-            document.getElementById('total-xp').innerText = totalXP;
-            return heroName;
+            myHeroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+            document.getElementById('hero-name').innerText = myHeroName;
+            document.getElementById('total-xp').innerText = localStorage.getItem('jovan_total_xp') || 0;
         }
 
-        async function loadLeaderboard(myHeroName) {
+        // 載入領袖榜：type 可以係 'all' 或者 'weekly'
+        async function loadLeaderboard(type) {
+            const tbody = document.getElementById('lb-body');
+            tbody.innerHTML = "<tr><td colspan='3'>Syncing Cloud Data...</td></tr>";
+            
             try {
-                const q = query(collection(db, "leaderboard"), orderBy("xp", "desc"), limit(10));
-                const querySnapshot = await getDocs(q);
-                const tbody = document.getElementById('lb-body');
-                tbody.innerHTML = "";
+                // 核心邏輯：根據 type 揀選排位欄位
+                const sortField = (type === 'weekly') ? "weeklyXP" : "xp";
+                const q = query(collection(db, "leaderboard"), orderBy(sortField, "desc"), limit(10));
                 
+                const querySnapshot = await getDocs(q);
+                tbody.innerHTML = "";
                 let rank = 1;
+                
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     const isMe = data.name === myHeroName;
+                    // 顯示對應嘅分數
+                    const score = (type === 'weekly') ? (data.weeklyXP || 0) : (data.xp || 0);
+                    
                     tbody.innerHTML += `
                         <tr class="${isMe ? 'my-score' : ''}">
                             <td class="rank-${rank}">${rank}</td>
                             <td style="color: ${isMe ? '#55FF55' : '#FFFF55'}">${data.name} ${isMe ? '(YOU)' : ''}</td>
-                            <td>${data.xp}</td>
+                            <td>${score}</td>
                         </tr>
                     `;
                     rank++;
                 });
             } catch (e) {
-                console.error("Error loading leaderboard: ", e);
-                document.getElementById('lb-body').innerHTML = "<tr><td colspan='3'>Offline Mode</td></tr>";
+                console.error("Leaderboard Error:", e);
+                tbody.innerHTML = "<tr><td colspan='3'>Error loading rankings.</td></tr>";
             }
         }
 
+        // 切換 Tab 邏輯
+        window.switchLeaderboard = (type) => {
+            document.getElementById('tab-all').classList.toggle('active', type === 'all');
+            document.getElementById('tab-weekly').classList.toggle('active', type === 'weekly');
+            loadLeaderboard(type);
+        };
+
         window.onload = async () => {
-            const myName = initHero();
-            await loadLeaderboard(myName);
+            initHero();
+            await loadLeaderboard('all'); // 預設顯示總榜
         };
     </script>
-    <div class="version-tag">v5.2.0-Spelling_Update</div>
+    <div class="version-tag">v5.5.0-Rolling_Weekly_System</div>
 </body>
 </html>
