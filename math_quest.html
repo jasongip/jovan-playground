@@ -152,33 +152,59 @@
         safeUpdateText('display-xp', xp);
     }
 
-    // 3. 雲端加分邏輯 (Firebase Sync)
-    async function addXP(amount) {
-        let currentXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
-        let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
-        
-        currentXP += amount;
-        localStorage.setItem('jovan_total_xp', currentXP);
-        safeUpdateText('display-xp', currentXP);
-
-        // 彈出 XP 動畫
-        const msg = document.createElement('div');
-        msg.innerText = `+${amount} XP!`;
-        msg.style = "position:fixed; top:40%; left:50%; transform:translateX(-50%); font-size:4em; color:#55FF55; text-shadow:3px 3px #000; z-index:9999; pointer-events:none; animation: fadeUp 1.5s forwards;";
-        document.body.appendChild(msg);
-        setTimeout(() => msg.remove(), 1500);
-
-        try {
-            await setDoc(doc(db, "leaderboard", heroName), {
-                name: heroName,
-                xp: currentXP,
-                lastUpdate: new Date()
-            }, { merge: true });
-            console.log("Math Cloud Sync Success!");
-        } catch (e) { 
-            console.error("Cloud Sync Error:", e); 
+// 3. 雲端加分邏輯 (Firebase Sync - 7日滾動週榜版)
+async function addXP(amount) {
+    let heroName = localStorage.getItem('jovan_hero_name') || "Mystery Explorer";
+    let totalXP = parseInt(localStorage.getItem('jovan_total_xp')) || 0;
+    
+    // 1. 處理每日分數紀錄 (LocalStorage 紀錄每一日攞幾多分)
+    let dailyLog = JSON.parse(localStorage.getItem('jovan_daily_log') || "{}");
+    let today = new Date().toISOString().split('T')[0]; // 格式: 2026-03-09
+    dailyLog[today] = (dailyLog[today] || 0) + amount;
+    
+    // 2. 計算過去 7 日嘅總得分 (Rolling 7 Days)
+    let weeklyXP = 0;
+    for (let i = 0; i < 7; i++) {
+        let d = new Date();
+        d.setDate(d.getDate() - i);
+        let dateStr = d.toISOString().split('T')[0];
+        if (dailyLog[dateStr]) {
+            weeklyXP += dailyLog[dateStr];
         }
     }
+
+    // 3. 更新 LocalStorage 同 UI
+    totalXP += amount;
+    localStorage.setItem('jovan_total_xp', totalXP);
+    localStorage.setItem('jovan_daily_log', JSON.stringify(dailyLog));
+    
+    if (typeof safeUpdateText === 'function') {
+        safeUpdateText('display-xp', totalXP);
+    } else {
+        const xpDisp = document.getElementById('display-xp');
+        if (xpDisp) xpDisp.innerText = totalXP;
+    }
+
+    // 保留原本好型嘅：+XP 噴字動畫
+    const msg = document.createElement('div');
+    msg.innerText = `+${amount} XP!`;
+    msg.style = "position:fixed; top:40%; left:50%; transform:translateX(-50%); font-size:4em; color:#55FF55; text-shadow:3px 3px #000; z-index:9999; pointer-events:none; animation: fadeUp 1.5s forwards;";
+    document.body.appendChild(msg);
+    setTimeout(() => msg.remove(), 1500);
+
+    // 4. 同步去 Firebase (同時傳送 xp 同 weeklyXP)
+    try {
+        await setDoc(doc(db, "leaderboard", heroName), {
+            name: heroName,
+            xp: totalXP,           // 總分 (All Time)
+            weeklyXP: weeklyXP,     // 過去 7 日獲得嘅分 (Weekly)
+            lastUpdate: new Date()
+        }, { merge: true });
+        console.log("Cloud Sync Success (Rolling 7 Days Enabled)!");
+    } catch (e) {
+        console.error("Cloud Sync Error:", e);
+    }
+}
 
     // 4. 掛載核心功能去 window (確保 HTML onclick 搵到)
     window.toggleSettings = function() {
